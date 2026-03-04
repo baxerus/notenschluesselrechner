@@ -1,0 +1,8 @@
+{
+  "cSpell.words": ["opencode"],
+  "github.copilot.enable": {
+    "*": false
+  },
+  "github.copilot.nextEditSuggestions.enabled": false,
+  "github.copilot.editor.enableCodeActions": false
+}

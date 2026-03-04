@@ -1,0 +1,57 @@
+#!/usr/bin/env sh
+
+commit_msg=$(cat "$1")
+
+# Rule: ASCII-only commit messages
+if echo "$commit_msg" | grep -qP '[^\x00-\x7F]'; then
+  echo ""
+  echo "  Invalid commit message: contains non-ASCII characters."
+  echo "  Commit messages must use plain ASCII only (no em dashes, multiplication"
+  echo "  signs, accented letters, or other Unicode characters)."
+  echo ""
+  echo "  Replacements for common offenders:"
+  echo "    -  instead of  —  (em dash)"
+  echo "    x  instead of  x  (multiplication sign, use plain 'x')"
+  echo "    >= instead of  >= (use plain ASCII)"
+  echo ""
+  exit 1
+fi
+
+# Rule: "<prefix>: <Detail>"
+#
+# Two valid prefix forms:
+#   1. Word prefix (no "." or "/" in prefix) — must start with an uppercase letter
+#      e.g. "Feat: ...", "Fix: ...", "Docs: ...", "Chore: ..."
+#   2. Path/filename prefix (contains "." or "/") — any case allowed
+#      e.g. "eslint.config.js: ...", "src/js/app.js: ...", "step-02: ..."
+#
+# In both cases:
+#   - Exactly one space after the colon
+#   - First character of the detail must be an uppercase letter, digit,
+#     or opening quote/paren
+
+word_prefix='^[A-Z][^:/]*: [A-Z0-9"'"'"'`(]'
+path_prefix='^[^:]*[./][^:]*: [A-Z0-9"'"'"'`(]'
+
+if ! echo "$commit_msg" | grep -qE "$word_prefix|$path_prefix"; then
+  echo ""
+  echo "  Invalid commit message: \"$commit_msg\""
+  echo ""
+  echo "  Format: <prefix>: <Detail>"
+  echo ""
+  echo "  Rules:"
+  echo "    - Word prefix (no '.' or '/'): must start with an uppercase letter"
+  echo "    - Filename/path prefix: any case allowed"
+  echo "    - Exactly one space after the colon"
+  echo "    - First character of the detail must be an uppercase letter, digit,"
+  echo "      or an opening quote/paren"
+  echo ""
+  echo "  Valid examples:"
+  echo "    Feat: Add grading calculation"
+  echo "    Fix: Correct rounding edge case"
+  echo "    Docs: Update PLAN.md"
+  echo "    eslint.config.js: Update rules"
+  echo "    src/js/app.js: Refactor storage calls"
+  echo ""
+  exit 1
+fi

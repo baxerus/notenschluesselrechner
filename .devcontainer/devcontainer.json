@@ -1,0 +1,59 @@
+{
+  "name": "Notenschluesselrechner",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "TZ": "${localEnv:TZ:Europe/Berlin}",
+      "GIT_DELTA_VERSION": "0.18.2",
+      "ZSH_IN_DOCKER_VERSION": "1.2.1",
+      "OPENCODE_VERSION": "latest",
+      "GSD_VERSION": "latest"
+    }
+  },
+  "postStartCommand": "npm install --no-package-lock --no-optional --no-audit --no-fund --loglevel=error",
+  "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "sst-dev.opencode",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "mechatroner.rainbow-csv",
+        "shardulm94.trailing-spaces",
+        "streetsidesoftware.code-spell-checker"
+      ],
+      "uninstallExtensions": ["github.copilot"],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash"
+          },
+          "zsh": {
+            "path": "zsh"
+          }
+        }
+      }
+    }
+  },
+  "remoteUser": "node",
+  "mounts": [
+    "source=opencode-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
+    "source=opencode-config-${devcontainerId},target=/home/node/.opencode,type=volume"
+  ],
+  "containerEnv": {
+    "LANG": "C.utf8",
+    "LC_ALL": "C.utf8",
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "OPENCODE_CONFIG_DIR": "/home/node/.opencode",
+    "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+  "workspaceFolder": "/workspace"
+}
