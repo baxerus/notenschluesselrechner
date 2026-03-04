@@ -1,5 +1,28 @@
 {
-  "cSpell.words": ["opencode"],
+  "cSpell.words": [
+    "anzeigen",
+    "Berechnen",
+    "Bildschirm",
+    "Drucken",
+    "Hinzufügen",
+    "Maximalpunktzahl",
+    "mehr",
+    "Menüleiste",
+    "nach",
+    "Nicht",
+    "notenschluessel",
+    "Notenschluesselrechner",
+    "Notenschlüssel",
+    "Notenschlüsselrechner",
+    "oben",
+    "opencode",
+    "rechts",
+    "Schließen",
+    "Scrolle",
+    "Teilen",
+    "Tippe",
+    "unten"
+  ],
   "github.copilot.enable": {
     "*": false
   },
