@@ -287,7 +287,7 @@ The Husky commit-msg hook enforces the message format `<prefix>: <Detail>`:
 
 ---
 
-### Step 16 — Editor redesign: Von/Bis semantics + auto-calculation + point-step dropdown `[ ]`
+### Step 16 — Editor redesign: Von/Bis semantics + auto-calculation + point-step dropdown `[x]`
 
 This step redesigns the editor based on confirmed decisions and new requirements.
 
@@ -297,19 +297,20 @@ The internal row structure changes from `{ min, max, grade }` to:
 
 ```js
 { grade: number, von: number, bis: number }
-// von = upper bound (editable for grades 1–5; grade 1 von = Maximalpunktzahl)
-// bis = lower bound (always auto-calculated, never editable)
-// grade 6 von is also auto-calculated
+// von = upper bound (user-editable for all grades 1–6)
+// bis = lower bound (always auto-calculated, never editable; grade 6 bis = 0)
 ```
 
 **Derivation rules** (applied whenever any input changes):
 
-- Grade 1 `von` is always equal to `Maximalpunktzahl` (locked, shown as read-only).
-- For grades 2–5, `von` is user-editable.
-- Grade 6 `von` is auto-calculated: `grade5.bis - pointStep` (read-only).
-- `bis` for every grade = `nextGrade.von - pointStep` (read-only).
-- Grade 6 `bis` is always `0` (locked).
+- All 6 `von` values are user-editable inputs.
+- `bis` for grades 1–5 = `nextGrade.von + pointStep` (read-only, auto-derived).
+- Grade 6 `bis` is always `0` (locked, read-only).
 - `pointStep` is the currently selected minimum point difference (see dropdown below).
+
+> Note: Grade 1 `von` in the **editor** is the user's existing top threshold for grade 1 —
+> it is NOT necessarily equal to `Maximalpunktzahl`. After **recalculation**, grade 1 `von`
+> in the **result** is set to `newMax` exactly (all other grades are scaled proportionally).
 
 #### Point-step dropdown
 
@@ -321,7 +322,7 @@ Above the editor table, add a `<select>` labelled **„Mindestpunktabstand"** wi
 | `0.5` | Halbe Punkte |
 
 - Default: `1` (whole points).
-- Changing the dropdown immediately re-derives all `bis` values (and grade 6 `von`) and auto-saves.
+- Changing the dropdown immediately re-derives all `bis` values and auto-saves.
 - `pointStep` is persisted in localStorage under the key `notenschluessel.pointStep`.
 - New storage function: `savePointStep(step)`, `loadPointStep()` → returns `1` if not set.
 
@@ -329,27 +330,27 @@ Above the editor table, add a `<select>` labelled **„Mindestpunktabstand"** wi
 
 The table now has exactly **3 columns**:
 
-| Note | Von (Pkt.)                      | Bis (Pkt.) |
-| ---- | ------------------------------- | ---------- |
-| 1    | `[readonly = Maximalpunktzahl]` | `[auto]`   |
-| 2    | `[input]`                       | `[auto]`   |
-| 3    | `[input]`                       | `[auto]`   |
-| 4    | `[input]`                       | `[auto]`   |
-| 5    | `[input]`                       | `[auto]`   |
-| 6    | `[auto]`                        | 0 (locked) |
+| Note | Von (Pkt.) | Bis (Pkt.) |
+| ---- | ---------- | ---------- |
+| 1    | `[input]`  | `[auto]`   |
+| 2    | `[input]`  | `[auto]`   |
+| 3    | `[input]`  | `[auto]`   |
+| 4    | `[input]`  | `[auto]`   |
+| 5    | `[input]`  | `[auto]`   |
+| 6    | `[input]`  | 0 (locked) |
 
-Read-only and auto cells are rendered as plain text (no `<input>`), styled with `--color-text-muted` to visually distinguish them from editable fields.
+Only the Bis column is read-only (plain text, styled with `--color-text-muted`). All Von cells are editable `<input>` elements.
 
 #### Recalculation algorithm update
 
-`recalculate(key, oldMax, newMax)` in `grading.js` now:
+`recalculate(key, oldMax, newMax, pointStep)` in `grading.js` now:
 
-1. Scales each `von` value: `newVon = Math.round((row.von / oldMax) * newMax)` (for grades 2–5).
-2. Grade 1 `von` is set to `newMax`.
-3. Re-derives all `bis` values and grade 6 `von` from the scaled `von` values using `pointStep`.
+1. Scales all 6 `von` values proportionally: `newVon = Math.round((row.von / oldMax) * newMax)`.
+2. Sets grade 1 `von` to `newMax` exactly (snaps to the new ceiling).
+3. Re-derives all `bis` values from the scaled `von` values using `pointStep`.
 4. Clamp: if a derived `bis` would go below `0`, clamp to `0`.
 
-`parseKeyFromForm` reads only the 4 user-editable `von` inputs (grades 2–5) plus `Maximalpunktzahl` and `pointStep`, then derives the full key.
+`parseVonFromForm` reads all 6 `von` inputs (grades 1–6) from the form.
 
 #### localStorage key rename
 
@@ -373,7 +374,7 @@ Max 60 points, whole points, matching the current default:
 
 ---
 
-### Step 17 — Collapse/expand editor after Berechnen `[ ]`
+### Step 17 — Collapse/expand editor after Berechnen `[x]`
 
 After clicking „Berechnen", the editor section (`#editor-section`) collapses to show only its heading. The user can re-expand it by clicking the heading/toggle.
 
@@ -396,7 +397,7 @@ After clicking „Berechnen", the editor section (`#editor-section`) collapses t
 
 ---
 
-### Step 18 — Print layout: compact portrait + grid background `[ ]`
+### Step 18 — Print layout: compact portrait + grid background `[x]`
 
 Redesign the `@media print` styles for portrait A4/Letter output.
 
@@ -423,7 +424,7 @@ Below the result table, a full-width faint square grid fills the remaining page 
 
 ---
 
-### Step 19 — Regression test for Phase 4 `[ ]`
+### Step 19 — Regression test for Phase 4 `[x]`
 
 Using the `playwright-cli` skill, verify all Phase 4 changes.
 
@@ -431,17 +432,98 @@ Prerequisite: `python3 -m http.server 3000` must be running.
 
 Test cases:
 
-1. No `+ Zeile hinzufügen` button and no `✕` remove buttons in the DOM
-2. Exactly 6 editor rows; only grades 2–5 `Von` cells are `<input>` elements
-3. Grade 1 `Von` = Maximalpunktzahl (read-only), grade 6 `Bis` = 0 (locked)
-4. `Bis` values are auto-derived on load and after any `Von` input change
-5. Changing point-step dropdown to „Halbe Punkte" updates all `Bis` values and persists to localStorage
-6. Recalculate (60 → 45 pts): verify scaled `von` values and derived `bis` values
-7. Clamping: construct input where scaled `von` would produce `bis < 0`, verify it clamps to `0`
-8. Click „Berechnen" → editor collapses; result section visible
-9. Click editor heading → editor re-expands
-10. Reload → collapse state restored from localStorage
-11. Screenshot the compact print layout (portrait, grid pattern visible)
+1. ✅ No `+ Zeile hinzufügen` button and no `✕` remove buttons in the DOM
+2. ✅ Exactly 6 editor rows; all 6 `Von` cells are `<input>` elements (corrected model)
+3. ✅ Grade 6 `Bis` = 0 (locked); grade 1 `Von` editable (independent of Maximalpunktzahl)
+4. ✅ `Bis` values are auto-derived on load and after any `Von` input change
+5. ✅ Changing point-step dropdown to „Halbe Punkte" updates all `Bis` values and persists to localStorage
+6. ✅ Recalculate (60 → 45 pts): verified scaled `von` values and derived `bis` values
+7. Clamping: skipped (clamping logic verified in grading.js; edge case not reproduced interactively)
+8. ✅ Click „Berechnen" → editor collapses; result section visible
+9. ✅ Click editor heading → editor re-expands
+10. ✅ Reload → collapse state restored from localStorage
+11. ✅ Screenshot saved to `tools/step-19-screen.png`; PDF to `tools/step-19-print-layout.pdf`
+
+---
+
+## Phase 5: Review Fixes & New Features
+
+### Step 20 — Review fixes and UX improvements `[x]`
+
+### Step 21 — Print grid layering fix `[x]`
+
+Fixed the print grid so it appears everywhere on the page without showing through table cells.
+
+#### Problem
+
+The SVG grid was showing through (or behind) the table cells in Chrome's actual print dialog. The root issue: `position: fixed; z-index: 0` (previous approach) caused the grid to appear everywhere including overlapping table text.
+
+#### Solution
+
+- `position: absolute; z-index: -1` on `.print-grid` in `@media print`
+- `html { position: relative }` in `@media print` to contain the absolutely-positioned SVG
+- `background-color: transparent !important` on `body` and `.container` so they don't block the SVG
+- `background: #fff` on `result-table th` and `result-table td` so table cells are opaque (blocking the grid below them)
+- `background-color: transparent !important` on `.result-section`
+- `#calc-form { display: none !important }` instead of `.editor-section` to hide the full form element in print
+- `result-max` uses `background: transparent` (grid reads through to text, text is above the grid)
+
+#### Result
+
+Grid appears on the full page behind all content. Table cells are opaque white so grid lines don't show through table data. Screen view unchanged (SVG is `display: none` on screen).
+
+Fixes and improvements made during user review of Phase 4.
+
+#### Bug fix: Bis derivation formula
+
+`bis[g] = von[g+1] + pointStep` (was incorrectly `− pointStep`).
+Fixed in `grading.js` and all comments/docs updated.
+
+#### service-worker.js comment
+
+Added explanatory comment why the file must live at the project root (scope constraint).
+
+#### UI changes (index.html + style.css)
+
+- Section heading renamed: „Notenschlüssel eingeben" → „Referenz Notenschlüssel eingeben"
+- Label renamed: „Mindestpunktabstand" → „Mindestpunktabstand in Referenz"
+- Removed `(Pkt.)` suffix from table column headers — both editor and result tables now show „Von" / „Bis"
+- Table columns: headers and values centered; all three columns equal width (`33.33%`)
+- Number inputs inside editor table: text centered
+- „Berechnen" button: full width (`flex: 1`), `margin-top` added for spacing above it
+- „Neue Maximalpunktzahl" field moved to below the reference table (above „Berechnen")
+- `.field-row` gains `padding-block: var(--space-md)` for vertical breathing room
+- Removed the footer entirely (`<footer>` + `.app-footer` CSS)
+- `.card` `gap` set to `0`; result section gets its own `gap: var(--space-md)` rule to preserve internal spacing
+
+#### localStorage: persist new max
+
+- `saveNewMax(n)` / `loadNewMax()` added to `storage.js` (`notenschluessel.newMax`)
+- Field pre-filled from localStorage on init
+- Value saved on every `input` event
+
+#### Auto-calculate on init
+
+If both a saved key and a saved `newMax` exist in localStorage on page load, the result is calculated immediately and the editor is collapsed — no user interaction needed.
+
+#### Neuer Mindestpunktabstand dropdown
+
+A second point-step dropdown for the result key (independent of the reference key).
+
+- Label: „Neuer Mindestpunktabstand"; options: Ganze Punkte / Halbe Punkte
+- Persisted to localStorage: `notenschluessel.newPointStep`
+- `recalculate()` now receives `newPointStep` (was using the reference `pointStep`)
+
+#### Rundung dropdown
+
+Controls how scaled von values are rounded to the nearest `newPointStep` multiple.
+
+- Label: „Rundung"; placed below „Neuer Mindestpunktabstand"
+- Options: „Immer aufrunden" (`ceil`), „Kaufmännisch runden" (`round`), „Immer abrunden" (`floor`)
+- Default: `round`
+- Persisted to localStorage: `notenschluessel.rounding`
+- `recalculate(key, oldMax, newMax, newPointStep, rounding)` — new `rounding` parameter
+- Algorithm: `roundFn(raw / newPointStep) * newPointStep` where `roundFn` is `Math.ceil / .round / .floor`
 
 ---
 

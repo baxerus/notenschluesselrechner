@@ -122,7 +122,7 @@ ol {
   padding: var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: 0;
 }
 
 /* ==========================================================================
@@ -146,7 +146,46 @@ ol {
    5. Grading key editor
    ========================================================================== */
 
-.editor-section h2,
+/* Editor toggle button (wraps the h2) */
+.editor-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  min-height: 44px;
+}
+
+.editor-toggle h2 {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+  flex: 1;
+}
+
+.chevron {
+  display: inline-block;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  /* Point right (collapsed) by default */
+  transform: rotate(0deg);
+  transition: transform var(--transition);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.chevron--open {
+  /* Point down (expanded) */
+  transform: rotate(90deg);
+}
+
+.result-section {
+  gap: var(--space-md);
+}
+
 .result-section h2 {
   font-size: var(--font-size-lg);
   color: var(--color-primary);
@@ -157,6 +196,7 @@ ol {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  padding-block: var(--space-md);
 }
 
 .field-row label {
@@ -167,7 +207,8 @@ ol {
   letter-spacing: 0.04em;
 }
 
-.field-row input {
+.field-row input,
+.field-row select {
   width: 100%;
   padding: var(--space-sm) var(--space-md);
   min-height: 44px;
@@ -179,7 +220,8 @@ ol {
   transition: border-color var(--transition);
 }
 
-.field-row input:focus {
+.field-row input:focus,
+.field-row select:focus {
   outline: none;
   border-color: var(--color-primary);
 }
@@ -199,7 +241,7 @@ ol {
 
 .editor-table th,
 .result-table th {
-  text-align: left;
+  text-align: center;
   padding: var(--space-xs) var(--space-sm);
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -207,6 +249,7 @@ ol {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   border-bottom: 2px solid var(--color-border);
+  width: 33.33%;
 }
 
 .editor-table td,
@@ -214,11 +257,8 @@ ol {
   padding: var(--space-xs) var(--space-sm);
   border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
-}
-
-.editor-table td:last-child {
-  width: 2.5rem;
   text-align: center;
+  width: 33.33%;
 }
 
 /* Inputs inside the editor table */
@@ -230,6 +270,7 @@ ol {
   border-radius: calc(var(--radius) / 2);
   font-size: var(--font-size-base);
   color: var(--color-text);
+  text-align: center;
   background: var(--color-surface);
   transition: border-color var(--transition);
   /* Minimum touch target */
@@ -247,9 +288,14 @@ ol {
   opacity: 0.4;
 }
 
-.editor-actions {
-  display: flex;
-  justify-content: flex-start;
+/* Read-only derived cells inside the editor table */
+.cell-readonly {
+  display: block;
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+  min-height: 44px;
+  line-height: 44px;
 }
 
 /* ==========================================================================
@@ -312,28 +358,6 @@ ol {
   background-color: var(--color-bg);
 }
 
-/* Remove-row button inside the editor table */
-.btn-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  min-height: 44px;
-  min-width: 44px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--color-error);
-  font-size: var(--font-size-base);
-  cursor: pointer;
-  transition: background-color var(--transition);
-}
-
-.btn-remove:hover {
-  background-color: #fce8e6;
-}
-
 /* ⓘ fixed info button */
 .btn-info {
   position: fixed;
@@ -362,7 +386,11 @@ ol {
 .form-actions {
   display: flex;
   gap: var(--space-sm);
-  justify-content: flex-end;
+  margin-top: var(--space-md);
+}
+
+.form-actions .btn {
+  flex: 1;
 }
 
 /* ==========================================================================
@@ -455,15 +483,9 @@ ol {
   justify-content: flex-end;
 }
 
-/* ==========================================================================
-   10. Footer
-   ========================================================================== */
-
-.app-footer {
-  text-align: center;
-  padding: var(--space-md) var(--space-lg);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+/* Print grid — hidden on screen, shown only in @media print */
+.print-grid {
+  display: none;
 }
 
 /* ==========================================================================
@@ -471,16 +493,22 @@ ol {
    ========================================================================== */
 
 @media print {
+  @page {
+    size: portrait;
+    margin: 15mm;
+  }
+
   .app-header,
-  .editor-section,
-  .app-footer,
+  #calc-form,
   .btn-info,
   .install-overlay {
     display: none !important;
   }
 
   body {
-    background: #fff;
+    /* Transparent so the SVG grid shows through everywhere except
+       the table cells themselves (which have background: #fff) */
+    background-color: transparent !important;
     color: #000;
     padding: 0;
   }
@@ -488,18 +516,65 @@ ol {
   .container {
     max-width: 100%;
     padding: 0;
+    gap: 0;
+    background-color: transparent !important;
+  }
+
+  /* SVG grid: fixed at page origin, covering the full printable area.
+     position:fixed maps to the page box in Chromium's PDF renderer.
+     z-index:0 is required — negative values are buried behind the page
+     canvas; the table and label use box-shadow:#fff to block the grid
+     locally without creating a full-width layout box.
+     The SVG width/height attributes are required by Chromium's PDF renderer
+     to anchor the userSpaceOnUse pattern coordinate system; they do not
+     fix the rendered size — CSS width/height:100% overrides those. */
+  .print-grid {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
   }
 
   .result-section {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
     box-shadow: none;
     border-radius: 0;
     padding: 0;
+    gap: 4px;
+    /* Shrink to content width, top-left */
+    width: auto;
+    background-color: transparent !important;
   }
 
+  /* Hide the result heading in print output */
   .result-section h2 {
+    display: none;
+  }
+
+  .result-max {
+    font-size: 0.8rem;
     color: #000;
-    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    background: transparent;
+  }
+
+  /* White background scoped to the text only — the <p> is transparent so
+     the grid shows through the empty space to the right of the label. */
+  .result-max__label {
+    position: relative;
+    z-index: 1;
+    background: #fff;
+    box-shadow: 0 0 0 8px #fff;
+  }
+
+  .result-table {
+    font-size: 0.8rem;
+    width: auto;
   }
 
   .result-table th,
@@ -507,10 +582,27 @@ ol {
     border-color: #000;
     background: #fff;
     color: #000;
+    padding: 2px 6px;
+    white-space: nowrap;
+    width: auto;
   }
 
   .form-actions {
     display: none;
+  }
+
+  /* Table wrapper must not force full width */
+  .result-section .table-wrapper {
+    overflow: visible;
+  }
+
+  /* position:relative + z-index:1 places the table above the SVG grid
+     (z-index:0). box-shadow spread creates the white halo without affecting
+     layout width, so the grid stays visible to the right of the table. */
+  .result-table {
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 0 8px #fff;
   }
 }
 

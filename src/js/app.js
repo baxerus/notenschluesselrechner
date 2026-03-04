@@ -3,35 +3,48 @@
  * Wires DOM, storage, and grading logic together.
  */
 
-import { recalculate, validateKey, parseKeyFromForm } from "./grading.js";
+import {
+  deriveKey,
+  recalculate,
+  validateKey,
+  parseVonFromForm,
+} from "./grading.js";
 import {
   saveKey,
   loadKey,
+  savePointStep,
+  loadPointStep,
+  saveNewMax,
+  loadNewMax,
+  saveNewPointStep,
+  loadNewPointStep,
+  saveRounding,
+  loadRounding,
+  saveEditorCollapsed,
+  loadEditorCollapsed,
   markInstallGuideSeen,
   hasSeenInstallGuide,
 } from "./storage.js";
 
 // ---------------------------------------------------------------------------
-// Default grading key (6 rows, one per grade, max 60 points)
+// Default grading key (6 rows, one per grade, max 60 whole points)
 // ---------------------------------------------------------------------------
 
-const DEFAULT_MAX = 60;
+const DEFAULT_POINT_STEP = 1;
 
-const DEFAULT_KEY = [
-  { grade: 1, min: 57, max: 60 },
-  { grade: 2, min: 49, max: 56 },
-  { grade: 3, min: 41, max: 48 },
-  { grade: 4, min: 33, max: 40 },
-  { grade: 5, min: 20, max: 32 },
-  { grade: 6, min: 0, max: 19 },
-];
+// Von values for all 6 grades of the default key (bis values are always derived)
+const DEFAULT_VON_ALL = [60, 56, 48, 40, 32, 19];
 
 // ---------------------------------------------------------------------------
 // DOM references (populated in init())
 // ---------------------------------------------------------------------------
 
 let editorBody;
+let editorToggleBtn;
 let newMaxInput;
+let pointStepSelect;
+let newPointStepSelect;
+let roundingSelect;
 let calcForm;
 let resultSection;
 let resultBody;
@@ -39,43 +52,87 @@ let errorBox;
 let installOverlay;
 
 // ---------------------------------------------------------------------------
-// Grading key editor
+// State
+// ---------------------------------------------------------------------------
+
+/** Currently active point step (1 or 0.5). Kept in sync with the select. */
+let currentPointStep = DEFAULT_POINT_STEP;
+
+/** Point step for the recalculated result (1 or 0.5). */
+let currentNewPointStep = DEFAULT_POINT_STEP;
+
+/** Rounding mode for the recalculated result. */
+let currentRounding = "round";
+
+/** Whether the editor body is currently collapsed. */
+let editorCollapsed = false;
+
+// ---------------------------------------------------------------------------
+// Key derivation helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Render the grading key editor rows from a key array.
+ * Read all 6 editable von inputs from the form
+ * and return a fully derived 6-row key.
  *
- * @param {Array<{min: number, max: number, grade: number}>} key
+ * @returns {Array<{grade: number, von: number, bis: number}>}
+ */
+function readDerivedKey() {
+  const fd = new FormData(calcForm);
+  const vonAll = parseVonFromForm(fd);
+  return deriveKey(vonAll, currentPointStep);
+}
+
+// ---------------------------------------------------------------------------
+// Editor render
+// ---------------------------------------------------------------------------
+
+/**
+ * Render the editor table rows from a fully derived key.
+ * All 6 Von cells are editable inputs.
+ * All Bis cells are read-only plain text.
+ *
+ * @param {Array<{grade: number, von: number, bis: number}>} key
  */
 function renderEditor(key) {
+  const sorted = [...key].sort((a, b) => a.grade - b.grade);
   editorBody.innerHTML = "";
-  key.forEach((row, i) => {
+
+  sorted.forEach((row) => {
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
-      <td><input type="number" name="grade-${i}" value="${row.grade}" min="1" max="6" required aria-label="Note"></td>
-      <td><input type="number" name="min-${i}" value="${row.min}" min="0" required aria-label="Von (Punkte)"></td>
-      <td><input type="number" name="max-${i}" value="${row.max}" min="0" required aria-label="Bis (Punkte)"></td>
-      <td><button type="button" class="btn-remove" data-index="${i}" aria-label="Zeile entfernen">✕</button></td>
+      <td class="col-grade">${row.grade}</td>
+      <td class="col-von"><input type="number" name="von-${row.grade}" value="${row.von}" min="0" step="${currentPointStep}" required aria-label="Von Punkte Note ${row.grade}"></td>
+      <td class="col-bis"><span class="cell-readonly">${row.bis}</span></td>
     `;
     editorBody.appendChild(tr);
   });
 }
 
 /**
- * Read the current editor state into a key array.
- *
- * @returns {Array<{min: number, max: number, grade: number}>}
+ * Re-derive the Bis values from the current form state
+ * and update the read-only Bis cells in-place — without wiping the inputs.
  */
-function readEditorKey() {
-  const fd = new FormData(calcForm);
-  return parseKeyFromForm(fd);
+function updateReadonlyCells() {
+  const key = readDerivedKey();
+  const sorted = [...key].sort((a, b) => a.grade - b.grade);
+
+  const rows = editorBody.querySelectorAll("tr");
+  rows.forEach((tr, i) => {
+    const row = sorted[i];
+    // All Bis cells are read-only — update them
+    const bisSpan = tr.querySelector(".col-bis .cell-readonly");
+    if (bisSpan) bisSpan.textContent = row.bis;
+  });
 }
 
-/**
- * Auto-save the current editor state.
- */
+// ---------------------------------------------------------------------------
+// Auto-save
+// ---------------------------------------------------------------------------
+
 function autoSave() {
-  saveKey(readEditorKey());
+  saveKey(readDerivedKey());
 }
 
 // ---------------------------------------------------------------------------
@@ -85,28 +142,45 @@ function autoSave() {
 /**
  * Render the recalculated result table.
  *
- * @param {Array<{min: number, max: number, grade: number}>} key
+ * @param {Array<{grade: number, von: number, bis: number}>} key
  * @param {number} newMax
  */
 function renderResult(key, newMax) {
-  resultBody.innerHTML = "";
-
-  // Sort by grade ascending for display
   const sorted = [...key].sort((a, b) => a.grade - b.grade);
+  resultBody.innerHTML = "";
 
   sorted.forEach((row) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${row.grade}</td>
-      <td>${row.min}</td>
-      <td>${row.max}</td>
+      <td>${row.von}</td>
+      <td>${row.bis}</td>
     `;
     resultBody.appendChild(tr);
   });
 
-  resultSection.querySelector(".result-max").textContent =
-    `Maximalpunktzahl: ${newMax}`;
+  resultSection.querySelector(".result-max").innerHTML =
+    `<span class="result-max__label">Maximalpunktzahl: ${newMax}</span>`;
   resultSection.hidden = false;
+}
+
+// ---------------------------------------------------------------------------
+// Editor collapse / expand
+// ---------------------------------------------------------------------------
+
+function setEditorCollapsed(collapsed) {
+  editorCollapsed = collapsed;
+  const editorBodyWrapper = document.getElementById("editor-body-wrapper");
+  editorBodyWrapper.hidden = collapsed;
+  editorToggleBtn.setAttribute("aria-expanded", String(!collapsed));
+  editorToggleBtn
+    .querySelector(".chevron")
+    .classList.toggle("chevron--open", !collapsed);
+  saveEditorCollapsed(collapsed);
+}
+
+function toggleEditor() {
+  setEditorCollapsed(!editorCollapsed);
 }
 
 // ---------------------------------------------------------------------------
@@ -143,7 +217,7 @@ function handleCalculate(e) {
   e.preventDefault();
   clearErrors();
 
-  const key = readEditorKey();
+  const key = readDerivedKey();
   const { valid, errors } = validateKey(key);
 
   if (!valid) {
@@ -151,7 +225,8 @@ function handleCalculate(e) {
     return;
   }
 
-  const oldMax = key.reduce((m, r) => Math.max(m, r.max), 0);
+  // oldMax = grade 1 von of the reference key
+  const oldMax = key.find((r) => r.grade === 1).von;
   const newMax = Number(newMaxInput.value);
 
   if (!Number.isFinite(newMax) || newMax <= 0) {
@@ -159,26 +234,36 @@ function handleCalculate(e) {
     return;
   }
 
-  const result = recalculate(key, oldMax, newMax);
+  const result = recalculate(
+    key,
+    oldMax,
+    newMax,
+    currentNewPointStep,
+    currentRounding,
+  );
   renderResult(result, newMax);
+  setEditorCollapsed(true);
 }
 
-function handleAddRow() {
-  const key = readEditorKey();
-  key.push({ grade: 1, min: 0, max: 0 });
-  renderEditor(key);
+function handlePointStepChange() {
+  currentPointStep = Number(pointStepSelect.value);
+  savePointStep(currentPointStep);
+  updateReadonlyCells();
   autoSave();
 }
 
-function handleRemoveRow(index) {
-  const key = readEditorKey();
-  if (key.length <= 1) return; // keep at least one row
-  key.splice(index, 1);
-  renderEditor(key);
-  autoSave();
+function handleNewPointStepChange() {
+  currentNewPointStep = Number(newPointStepSelect.value);
+  saveNewPointStep(currentNewPointStep);
 }
 
-function handleEditorChange() {
+function handleRoundingChange() {
+  currentRounding = roundingSelect.value;
+  saveRounding(currentRounding);
+}
+
+function handleEditorInput() {
+  updateReadonlyCells();
   autoSave();
 }
 
@@ -189,44 +274,79 @@ function handleEditorChange() {
 function init() {
   // Grab DOM references
   editorBody = document.getElementById("editor-body");
+  editorToggleBtn = document.getElementById("editor-toggle");
   newMaxInput = document.getElementById("new-max");
+  pointStepSelect = document.getElementById("point-step");
+  newPointStepSelect = document.getElementById("new-point-step");
+  roundingSelect = document.getElementById("rounding");
   calcForm = document.getElementById("calc-form");
   resultSection = document.getElementById("result-section");
   resultBody = document.getElementById("result-body");
   errorBox = document.getElementById("error-box");
   installOverlay = document.getElementById("install-overlay");
 
+  // Restore point steps
+  currentPointStep = loadPointStep();
+  pointStepSelect.value = String(currentPointStep);
+  currentNewPointStep = loadNewPointStep();
+  newPointStepSelect.value = String(currentNewPointStep);
+  currentRounding = loadRounding();
+  roundingSelect.value = currentRounding;
+
   // Load saved key or fall back to default
   const savedKey = loadKey();
-  const activeKey = savedKey ?? DEFAULT_KEY;
-  renderEditor(activeKey);
+  let activeKey;
 
-  // Pre-populate newMaxInput from active key
-  const activeMax = activeKey.reduce((m, r) => Math.max(m, r.max), 0);
-  newMaxInput.value = activeMax;
-
-  // Persist the key immediately so it survives a reload even without any interaction
-  if (!savedKey) {
+  if (savedKey) {
+    activeKey = savedKey;
+  } else {
+    activeKey = deriveKey(DEFAULT_VON_ALL, DEFAULT_POINT_STEP);
     saveKey(activeKey);
   }
 
-  // Form submission (Berechnen)
+  renderEditor(activeKey);
+
+  // Restore new max
+  const savedNewMax = loadNewMax();
+  if (savedNewMax !== null) {
+    newMaxInput.value = String(savedNewMax);
+  }
+
+  // Auto-calculate on init if all necessary values are available,
+  // then collapse the editor. Otherwise restore the persisted collapse state.
+  if (savedKey && savedNewMax !== null) {
+    const oldMax = activeKey.find((r) => r.grade === 1).von;
+    const result = recalculate(
+      activeKey,
+      oldMax,
+      savedNewMax,
+      currentNewPointStep,
+      currentRounding,
+    );
+    renderResult(result, savedNewMax);
+    setEditorCollapsed(true);
+  } else {
+    const collapsed = loadEditorCollapsed();
+    const editorBodyWrapper = document.getElementById("editor-body-wrapper");
+    editorCollapsed = collapsed;
+    editorBodyWrapper.hidden = collapsed;
+    editorToggleBtn.setAttribute("aria-expanded", String(!collapsed));
+    editorToggleBtn
+      .querySelector(".chevron")
+      .classList.toggle("chevron--open", !collapsed);
+  }
+
+  // Event listeners
   calcForm.addEventListener("submit", handleCalculate);
-
-  // Add row button
-  document
-    .getElementById("btn-add-row")
-    .addEventListener("click", handleAddRow);
-
-  // Remove row (delegated)
-  editorBody.addEventListener("click", (e) => {
-    const btn = e.target.closest(".btn-remove");
-    if (btn) handleRemoveRow(Number(btn.dataset.index));
+  pointStepSelect.addEventListener("change", handlePointStepChange);
+  editorBody.addEventListener("input", handleEditorInput);
+  editorToggleBtn.addEventListener("click", toggleEditor);
+  newPointStepSelect.addEventListener("change", handleNewPointStepChange);
+  roundingSelect.addEventListener("change", handleRoundingChange);
+  newMaxInput.addEventListener("input", () => {
+    const v = Number(newMaxInput.value);
+    if (Number.isFinite(v) && v > 0) saveNewMax(v);
   });
-
-  // Auto-save on any editor input change
-  editorBody.addEventListener("change", handleEditorChange);
-  editorBody.addEventListener("input", handleEditorChange);
 
   // Print button
   document.getElementById("btn-print").addEventListener("click", () => {
@@ -241,18 +361,15 @@ function init() {
     showInstallOverlay();
   }
 
-  // "Nicht mehr anzeigen" — dismiss and set flag
   document.getElementById("btn-guide-dismiss").addEventListener("click", () => {
     markInstallGuideSeen();
     hideInstallOverlay();
   });
 
-  // "Schließen" (×) — dismiss without flag
   document.getElementById("btn-guide-close").addEventListener("click", () => {
     hideInstallOverlay();
   });
 
-  // ⓘ button — always opens guide
   document.getElementById("btn-info").addEventListener("click", () => {
     showInstallOverlay();
   });

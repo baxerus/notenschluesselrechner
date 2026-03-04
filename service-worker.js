@@ -1,12 +1,17 @@
 /**
  * service-worker.js — Cache-first service worker for Notenschlüsselrechner.
  *
+ * NOTE: This file must live at the project root, not in src/js/.
+ * A service worker's scope is limited to its own directory and below,
+ * so placing it anywhere other than root would prevent it from
+ * controlling requests for index.html and other root-level resources.
+ *
  * Strategy: cache-first with network fallback.
  * All app shell files are pre-cached on install.
  * Cache is versioned — bumping CACHE_NAME triggers re-caching on next visit.
  */
 
-const CACHE_NAME = "notenschluessel-v1";
+const CACHE_NAME = "notenschluessel-v2";
 
 const APP_SHELL = [
   "/",
