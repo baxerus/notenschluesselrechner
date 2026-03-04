@@ -1,0 +1,533 @@
+/* ==========================================================================
+   1. CSS custom properties
+   ========================================================================== */
+
+:root {
+  /* Color palette */
+  --color-primary: #3b6fa0;
+  --color-primary-dark: #2c5480;
+  --color-accent: #e8a838;
+  --color-bg: #faf8f5;
+  --color-surface: #ffffff;
+  --color-text: #2d2a26;
+  --color-text-muted: #6b6560;
+  --color-success: #4a8c6f;
+  --color-error: #c0392b;
+  --color-border: #d6d1cb;
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Typography scale */
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.75rem;
+  --line-height-base: 1.5;
+
+  /* Misc */
+  --radius: 0.5rem;
+  --shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  --transition: 150ms ease;
+}
+
+/* ==========================================================================
+   2. Reset / base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  min-height: 100vh;
+  /* Safe area insets for iOS notch / home indicator */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* Respect the HTML `hidden` attribute even when a component sets display */
+[hidden] {
+  display: none !important;
+}
+
+/* Accessibility: visually hidden but available to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ==========================================================================
+   3. Layout
+   ========================================================================== */
+
+.container {
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ==========================================================================
+   4. Header
+   ========================================================================== */
+
+.app-header {
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  padding: var(--space-md) var(--space-lg);
+  text-align: center;
+}
+
+.app-header h1 {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* ==========================================================================
+   5. Grading key editor
+   ========================================================================== */
+
+.editor-section h2,
+.result-section h2 {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary);
+}
+
+/* New max field */
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field-row label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field-row input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-surface);
+  transition: border-color var(--transition);
+}
+
+.field-row input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Scrollable table container on small screens */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.editor-table,
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-base);
+}
+
+.editor-table th,
+.result-table th {
+  text-align: left;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.editor-table td,
+.result-table td {
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.editor-table td:last-child {
+  width: 2.5rem;
+  text-align: center;
+}
+
+/* Inputs inside the editor table */
+.editor-table input[type="number"] {
+  width: 100%;
+  min-width: 4rem;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) / 2);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-surface);
+  transition: border-color var(--transition);
+  /* Minimum touch target */
+  min-height: 44px;
+}
+
+.editor-table input[type="number"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Hide number input spinners (optional, keeps it clean) */
+.editor-table input[type="number"]::-webkit-inner-spin-button,
+.editor-table input[type="number"]::-webkit-outer-spin-button {
+  opacity: 0.4;
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* ==========================================================================
+   6. Result table
+   ========================================================================== */
+
+.result-max {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.result-table td {
+  font-size: var(--font-size-lg);
+}
+
+/* ==========================================================================
+   7. Buttons
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--radius);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--transition),
+    opacity var(--transition);
+  /* Minimum touch target */
+  min-height: 44px;
+  text-decoration: none;
+}
+
+.btn:active {
+  opacity: 0.85;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--color-surface);
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-bg);
+}
+
+/* Remove-row button inside the editor table */
+.btn-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  min-height: 44px;
+  min-width: 44px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-error);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.btn-remove:hover {
+  background-color: #fce8e6;
+}
+
+/* ⓘ fixed info button */
+.btn-info {
+  position: fixed;
+  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  right: var(--space-lg);
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition);
+  z-index: 100;
+}
+
+.btn-info:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}
+
+/* ==========================================================================
+   8. Validation error list
+   ========================================================================== */
+
+.error-list {
+  list-style: disc;
+  padding-left: var(--space-lg);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+/* ==========================================================================
+   9. iOS install guide overlay
+   ========================================================================== */
+
+.install-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+  padding: var(--space-md);
+  padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
+}
+
+.install-overlay__inner {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: var(--space-xl);
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.install-overlay h2 {
+  font-size: var(--font-size-xl);
+  color: var(--color-primary);
+}
+
+.install-overlay p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.install-steps {
+  list-style: decimal;
+  padding-left: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  font-size: var(--font-size-base);
+}
+
+.install-overlay__close {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  border-radius: var(--radius);
+  transition: background-color var(--transition);
+  white-space: nowrap;
+}
+
+.install-overlay__close:hover {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.install-overlay__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ==========================================================================
+   10. Footer
+   ========================================================================== */
+
+.app-footer {
+  text-align: center;
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   11. @media print
+   ========================================================================== */
+
+@media print {
+  .app-header,
+  .editor-section,
+  .app-footer,
+  .btn-info,
+  .install-overlay {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    padding: 0;
+  }
+
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .result-section {
+    display: block !important;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .result-section h2 {
+    color: #000;
+    margin-bottom: 0.5rem;
+  }
+
+  .result-table th,
+  .result-table td {
+    border-color: #000;
+    background: #fff;
+    color: #000;
+  }
+
+  .form-actions {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   12. @media (min-width: 768px) — desktop polish
+   ========================================================================== */
+
+@media (min-width: 768px) {
+  .app-header h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .container {
+    padding: var(--space-xl);
+  }
+
+  .card {
+    padding: var(--space-xl);
+  }
+}
