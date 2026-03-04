@@ -273,13 +273,185 @@ The Husky commit-msg hook enforces the message format `<prefix>: <Detail>`:
 
 ---
 
+## Phase 4: Decision Follow-Up
+
+### Step 14 — Remove add/remove row controls `[x]`
+
+> Absorbed into Step 16 (editor redesign). The new editor renders exactly 6 fixed rows with no add/remove controls. No separate implementation needed.
+
+---
+
+### Step 15 — Clamp min ≤ max after recalculation `[x]`
+
+> Absorbed into Step 16 (editor redesign). Clamping is specified as part of the updated `recalculate()` algorithm in Step 16. No separate implementation needed.
+
+---
+
+### Step 16 — Editor redesign: Von/Bis semantics + auto-calculation + point-step dropdown `[ ]`
+
+This step redesigns the editor based on confirmed decisions and new requirements.
+
+#### Data model change
+
+The internal row structure changes from `{ min, max, grade }` to:
+
+```js
+{ grade: number, von: number, bis: number }
+// von = upper bound (editable for grades 1–5; grade 1 von = Maximalpunktzahl)
+// bis = lower bound (always auto-calculated, never editable)
+// grade 6 von is also auto-calculated
+```
+
+**Derivation rules** (applied whenever any input changes):
+
+- Grade 1 `von` is always equal to `Maximalpunktzahl` (locked, shown as read-only).
+- For grades 2–5, `von` is user-editable.
+- Grade 6 `von` is auto-calculated: `grade5.bis - pointStep` (read-only).
+- `bis` for every grade = `nextGrade.von - pointStep` (read-only).
+- Grade 6 `bis` is always `0` (locked).
+- `pointStep` is the currently selected minimum point difference (see dropdown below).
+
+#### Point-step dropdown
+
+Above the editor table, add a `<select>` labelled **„Mindestpunktabstand"** with options:
+
+| Value | Label        |
+| ----- | ------------ |
+| `1`   | Ganze Punkte |
+| `0.5` | Halbe Punkte |
+
+- Default: `1` (whole points).
+- Changing the dropdown immediately re-derives all `bis` values (and grade 6 `von`) and auto-saves.
+- `pointStep` is persisted in localStorage under the key `notenschluessel.pointStep`.
+- New storage function: `savePointStep(step)`, `loadPointStep()` → returns `1` if not set.
+
+#### Editor table columns
+
+The table now has exactly **3 columns**:
+
+| Note | Von (Pkt.)                      | Bis (Pkt.) |
+| ---- | ------------------------------- | ---------- |
+| 1    | `[readonly = Maximalpunktzahl]` | `[auto]`   |
+| 2    | `[input]`                       | `[auto]`   |
+| 3    | `[input]`                       | `[auto]`   |
+| 4    | `[input]`                       | `[auto]`   |
+| 5    | `[input]`                       | `[auto]`   |
+| 6    | `[auto]`                        | 0 (locked) |
+
+Read-only and auto cells are rendered as plain text (no `<input>`), styled with `--color-text-muted` to visually distinguish them from editable fields.
+
+#### Recalculation algorithm update
+
+`recalculate(key, oldMax, newMax)` in `grading.js` now:
+
+1. Scales each `von` value: `newVon = Math.round((row.von / oldMax) * newMax)` (for grades 2–5).
+2. Grade 1 `von` is set to `newMax`.
+3. Re-derives all `bis` values and grade 6 `von` from the scaled `von` values using `pointStep`.
+4. Clamp: if a derived `bis` would go below `0`, clamp to `0`.
+
+`parseKeyFromForm` reads only the 4 user-editable `von` inputs (grades 2–5) plus `Maximalpunktzahl` and `pointStep`, then derives the full key.
+
+#### localStorage key rename
+
+- Old: `notenschluessel.key` (array of `{ min, max, grade }`)
+- New: `notenschluessel.key` (array of `{ grade, von, bis }`) — same key name, new shape. On load, if the stored shape is the old format, discard it and fall back to the default key.
+
+#### Default key
+
+Max 60 points, whole points, matching the current default:
+
+```js
+[
+  { grade: 1, von: 60, bis: 57 },
+  { grade: 2, von: 56, bis: 49 },
+  { grade: 3, von: 48, bis: 41 },
+  { grade: 4, von: 40, bis: 33 },
+  { grade: 5, von: 32, bis: 20 },
+  { grade: 6, von: 19, bis: 0 },
+];
+```
+
+---
+
+### Step 17 — Collapse/expand editor after Berechnen `[ ]`
+
+After clicking „Berechnen", the editor section (`#editor-section`) collapses to show only its heading. The user can re-expand it by clicking the heading/toggle.
+
+#### Behaviour
+
+- On „Berechnen": collapse the editor body, show result section.
+- The heading row gains a `▶` / `▼` chevron indicating collapsed/expanded state.
+- Clicking the heading always toggles expanded ↔ collapsed.
+- Collapse state is persisted in localStorage under `notenschluessel.editorCollapsed` (`"true"` / absent).
+  - New storage functions: `saveEditorCollapsed(bool)`, `loadEditorCollapsed()` → returns `false` if not set.
+- On page load: restore collapse state from localStorage (default: expanded).
+- The result section remains visible once calculated, regardless of editor state.
+
+#### CSS
+
+- Editor body content is wrapped in a `<div class="editor-body">` that gets `hidden` when collapsed.
+- The section heading becomes a `<button>` (or contains one) for keyboard accessibility.
+- Chevron rotates 90° when expanded (`transform: rotate(90deg)`), points right when collapsed.
+- Transition: `max-height` or `display` toggle (use `hidden` attribute, consistent with the rest of the app).
+
+---
+
+### Step 18 — Print layout: compact portrait + grid background `[ ]`
+
+Redesign the `@media print` styles for portrait A4/Letter output.
+
+#### Layout
+
+- Remove the `<h2>` heading from print output entirely.
+- Keep the `Maximalpunktzahl: N` line.
+- Table is compact: smaller font (`0.8rem`), reduced cell padding (`2px 4px`), no box shadows.
+- No minimum column widths — let the table shrink to content.
+- Page orientation hint: `@page { size: portrait; margin: 15mm; }`.
+
+#### Grid pattern
+
+Below the result table, a full-width faint square grid fills the remaining page space.
+
+- Implemented as a `<div class="print-grid">` element in `index.html`, hidden on screen (`display: none`), shown only in `@media print`.
+- Grid is drawn with CSS `background-image` using `repeating-linear-gradient`:
+  - Horizontal lines every `5mm`.
+  - Vertical lines every `5mm`.
+  - Line colour: `#CCCCCC` at `20%` opacity → use `rgba(204, 204, 204, 0.2)`.
+  - Line thickness: `0.25pt` (hairline).
+- The `div` has `flex: 1` so it expands to fill remaining page height after the table.
+- Print container uses `display: flex; flex-direction: column; min-height: 100vh` so the grid div fills all remaining space.
+
+---
+
+### Step 19 — Regression test for Phase 4 `[ ]`
+
+Using the `playwright-cli` skill, verify all Phase 4 changes.
+
+Prerequisite: `python3 -m http.server 3000` must be running.
+
+Test cases:
+
+1. No `+ Zeile hinzufügen` button and no `✕` remove buttons in the DOM
+2. Exactly 6 editor rows; only grades 2–5 `Von` cells are `<input>` elements
+3. Grade 1 `Von` = Maximalpunktzahl (read-only), grade 6 `Bis` = 0 (locked)
+4. `Bis` values are auto-derived on load and after any `Von` input change
+5. Changing point-step dropdown to „Halbe Punkte" updates all `Bis` values and persists to localStorage
+6. Recalculate (60 → 45 pts): verify scaled `von` values and derived `bis` values
+7. Clamping: construct input where scaled `von` would produce `bis < 0`, verify it clamps to `0`
+8. Click „Berechnen" → editor collapses; result section visible
+9. Click editor heading → editor re-expands
+10. Reload → collapse state restored from localStorage
+11. Screenshot the compact print layout (portrait, grid pattern visible)
+
+---
+
 ## Open Questions / Decisions
 
-| #   | Question                                                                            | Decision |
-| --- | ----------------------------------------------------------------------------------- | -------- |
-| 1   | How many rows does the default/empty grading key have?                              | TBD      |
-| 2   | Should the user be able to add/remove rows, or is it always 6 rows (one per grade)? | TBD      |
-| 3   | What happens if a row's recalculated min > max (rounding edge case)?                | TBD      |
+| #   | Question                                                                            | Decision                                                                                            |
+| --- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1   | How many rows does the default/empty grading key have?                              | Always 6 rows — one per grade 1–6.                                                                  |
+| 2   | Should the user be able to add/remove rows, or is it always 6 rows (one per grade)? | Always exactly 6 rows. No add/remove controls.                                                      |
+| 3   | What happens if a row's recalculated min > max (rounding edge case)?                | Clamp: set min = max so the row stays valid (single-point grade range). No error shown to the user. |
 
 ---
 
