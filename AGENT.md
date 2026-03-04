@@ -189,6 +189,19 @@ This applies to everything: generators, data fixers, test helpers, migration
 scripts, debug utilities — if you wrote it to get something done, it goes in
 `tools/`.
 
+## Open Questions Policy
+
+Before starting work on **any** step in PLAN.md, check the
+**Open Questions / Decisions** table at the bottom of PLAN.md.
+
+- If any row in that table has an empty or `TBD` **Decision** column, **stop**.
+- Do not begin implementing the step.
+- Instead, list the open questions for the developer and wait for answers
+  before proceeding.
+
+Only start implementation once every relevant question has a recorded decision.
+When a decision is made, update the table in PLAN.md before writing any code.
+
 ## Commit Guidelines
 
 Commits are linted automatically via Husky + lint-staged on pre-commit.
