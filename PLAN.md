@@ -30,7 +30,7 @@ Create the two coordination documents.
 
 ---
 
-### Step 2 — App Icons `[ ]`
+### Step 2 — App Icons `[x]`
 
 Generate placeholder PNG icons programmatically using a Node.js Canvas script.
 
@@ -53,7 +53,7 @@ Rules:
 
 ---
 
-### Step 3 — manifest.json `[ ]`
+### Step 3 — manifest.json `[x]`
 
 PWA manifest file.
 
@@ -71,7 +71,7 @@ PWA manifest file.
 
 ---
 
-### Step 4 — service-worker.js `[ ]`
+### Step 4 — service-worker.js `[x]`
 
 Cache-first service worker.
 
@@ -84,7 +84,7 @@ Cache-first service worker.
 
 ## Phase 2: Core Application
 
-### Step 5 — index.html `[ ]`
+### Step 5 — index.html `[x]`
 
 App shell. All text in German.
 
@@ -110,7 +110,7 @@ Semantic structure:
 
 ---
 
-### Step 6 — src/js/grading.js `[ ]`
+### Step 6 — src/js/grading.js `[x]`
 
 Pure calculation functions — no DOM access, no side effects.
 
@@ -140,7 +140,7 @@ newMax = Math.round((row.max / oldMax) * newMax)
 
 ---
 
-### Step 7 — src/js/storage.js `[ ]`
+### Step 7 — src/js/storage.js `[x]`
 
 localStorage abstraction.
 
@@ -158,7 +158,7 @@ localStorage keys used:
 
 ---
 
-### Step 8 — src/js/app.js `[ ]`
+### Step 8 — src/js/app.js `[x]`
 
 Main app controller — wires DOM, storage, and grading logic together.
 
@@ -180,7 +180,7 @@ const isStandalone = window.navigator.standalone === true;
 
 ---
 
-### Step 9 — src/css/style.css `[ ]`
+### Step 9 — src/css/style.css `[x]`
 
 All styles. No inline styles in HTML. Structure:
 
@@ -199,7 +199,7 @@ All styles. No inline styles in HTML. Structure:
 
 ## Phase 3: Polish and Testing
 
-### Step 10 — iOS Install Guide UX `[ ]`
+### Step 10 — iOS Install Guide UX `[x]`
 
 Full content and behavior of the install guide overlay.
 
@@ -218,7 +218,7 @@ Behavior:
 
 ---
 
-### Step 11 — Playwright Testing `[ ]`
+### Step 11 — Playwright Testing `[x]`
 
 Using the `playwright-cli` skill, test the full user flow.
 
@@ -236,7 +236,7 @@ Test cases:
 
 ---
 
-### Step 12 — WebKit / iOS Safari Check `[ ]`
+### Step 12 — WebKit / iOS Safari Check `[x]`
 
 Test with Chrome engine (webkit would be closest to iOS Safari behavior, but webkit is not working with playwright-cli in the moment):
 
@@ -254,7 +254,7 @@ Check:
 
 ---
 
-### Step 13 — Lint and Initial Commit `[ ]`
+### Step 13 — Lint and Initial Commit `[x]`
 
 ```bash
 npx eslint .
