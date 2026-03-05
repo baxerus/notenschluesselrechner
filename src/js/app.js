@@ -6,7 +6,7 @@
 import {
   deriveKey,
   recalculate,
-  validateKey,
+  validateVon,
   parseVonFromForm,
 } from "./grading.js";
 import {
@@ -125,6 +125,47 @@ function updateReadonlyCells() {
     const bisSpan = tr.querySelector(".col-bis .cell-readonly");
     if (bisSpan) bisSpan.textContent = row.bis;
   });
+
+  updateVonConstraints();
+}
+
+/**
+ * Update min, max, and step attributes on all Von inputs based on their
+ * neighbours' current values and the active point step.
+ *
+ * Grade 1 : min = von[2] + pointStep  (no max — unbounded above)
+ * Grades 2–5: min = von[g+1] + pointStep,  max = von[g-1] - pointStep
+ * Grade 6 : min = 0,  max = von[5] - pointStep
+ */
+function updateVonConstraints() {
+  const fd = new FormData(calcForm);
+  const vonAll = parseVonFromForm(fd);
+  const rows = editorBody.querySelectorAll("tr");
+
+  rows.forEach((tr, i) => {
+    const input = tr.querySelector("input[type=number]");
+    if (!input) return;
+
+    const grade = i + 1; // grades 1–6
+
+    input.step = String(currentPointStep);
+
+    if (grade === 1) {
+      // min: must cover at least grade 2's von + pointStep
+      const min = (vonAll[1] || 0) + currentPointStep;
+      input.min = String(min);
+      input.removeAttribute("max");
+    } else if (grade === 6) {
+      input.min = "0";
+      const max = (vonAll[4] || 0) - currentPointStep;
+      input.max = String(max);
+    } else {
+      const min = (vonAll[i + 1] || 0) + currentPointStep;
+      const max = (vonAll[i - 1] || 0) - currentPointStep;
+      input.min = String(min);
+      input.max = String(max);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -160,7 +201,7 @@ function renderResult(key, newMax) {
   });
 
   resultSection.querySelector(".result-max").innerHTML =
-    `<span class="result-max__label">Maximalpunktzahl: ${newMax}</span>`;
+    `<span class="result-max__label">Maximalpunktanzahl: ${newMax}</span>`;
   resultSection.hidden = false;
 }
 
@@ -217,20 +258,26 @@ function handleCalculate(e) {
   e.preventDefault();
   clearErrors();
 
-  const key = readDerivedKey();
-  const { valid, errors } = validateKey(key);
+  // Validate raw von values BEFORE deriveKey clamps them — this is intentional.
+  // deriveKey silently fixes invalid input (e.g. out-of-order values); we must
+  // catch those errors here so the user sees them instead of a silent result.
+  const fd = new FormData(calcForm);
+  const vonAll = parseVonFromForm(fd);
+  const { valid, errors } = validateVon(vonAll, currentPointStep);
 
   if (!valid) {
     showErrors(errors);
     return;
   }
 
+  const key = deriveKey(vonAll, currentPointStep);
+
   // oldMax = grade 1 von of the reference key
   const oldMax = key.find((r) => r.grade === 1).von;
   const newMax = Number(newMaxInput.value);
 
   if (!Number.isFinite(newMax) || newMax <= 0) {
-    showErrors(["Bitte gib eine gültige neue Maximalpunktzahl ein."]);
+    showErrors(["Bitte gib eine gültige neue Maximalpunktanzahl ein."]);
     return;
   }
 
@@ -241,6 +288,17 @@ function handleCalculate(e) {
     currentNewPointStep,
     currentRounding,
   );
+
+  // Validate the result key — rounding can collapse distinct grades when newMax is very small.
+  const resultVon = result.map((r) => r.von);
+  const { valid: resultValid } = validateVon(resultVon, currentNewPointStep);
+  if (!resultValid) {
+    showErrors([
+      "Die neue Maximalpunktanzahl ist zu klein — der berechnete Notenschlüssel ist nicht eindeutig. Bitte wähle einen größeren Wert.",
+    ]);
+    return;
+  }
+
   renderResult(result, newMax);
   setEditorCollapsed(true);
 }
@@ -248,7 +306,7 @@ function handleCalculate(e) {
 function handlePointStepChange() {
   currentPointStep = Number(pointStepSelect.value);
   savePointStep(currentPointStep);
-  updateReadonlyCells();
+  updateReadonlyCells(); // also calls updateVonConstraints()
   autoSave();
 }
 
@@ -305,6 +363,7 @@ function init() {
   }
 
   renderEditor(activeKey);
+  updateVonConstraints();
 
   // Restore new max
   const savedNewMax = loadNewMax();
