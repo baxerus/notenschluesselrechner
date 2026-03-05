@@ -102,7 +102,7 @@ Semantic structure:
 
 - `<header>` — app title
 - `<main>`
-  - Section: grading key editor (input table: min pts / max pts / grade, plus "Maximalpunktzahl" field)
+  - Section: grading key editor (input table: min pts / max pts / grade, plus "Maximalpunktanzahl" field)
   - Section: result display (recalculated table, hidden until calculation is triggered)
 - `<footer>` — minimal
 - iOS install guide overlay (hidden by default, shown via JS)
@@ -309,7 +309,7 @@ The internal row structure changes from `{ min, max, grade }` to:
 - `pointStep` is the currently selected minimum point difference (see dropdown below).
 
 > Note: Grade 1 `von` in the **editor** is the user's existing top threshold for grade 1 —
-> it is NOT necessarily equal to `Maximalpunktzahl`. After **recalculation**, grade 1 `von`
+> it is NOT necessarily equal to `Maximalpunktanzahl`. After **recalculation**, grade 1 `von`
 > in the **result** is set to `newMax` exactly (all other grades are scaled proportionally).
 
 #### Point-step dropdown
@@ -404,7 +404,7 @@ Redesign the `@media print` styles for portrait A4/Letter output.
 #### Layout
 
 - Remove the `<h2>` heading from print output entirely.
-- Keep the `Maximalpunktzahl: N` line.
+- Keep the `Maximalpunktanzahl: N` line.
 - Table is compact: smaller font (`0.8rem`), reduced cell padding (`2px 4px`), no box shadows.
 - No minimum column widths — let the table shrink to content.
 - Page orientation hint: `@page { size: portrait; margin: 15mm; }`.
@@ -434,7 +434,7 @@ Test cases:
 
 1. ✅ No `+ Zeile hinzufügen` button and no `✕` remove buttons in the DOM
 2. ✅ Exactly 6 editor rows; all 6 `Von` cells are `<input>` elements (corrected model)
-3. ✅ Grade 6 `Bis` = 0 (locked); grade 1 `Von` editable (independent of Maximalpunktzahl)
+3. ✅ Grade 6 `Bis` = 0 (locked); grade 1 `Von` editable (independent of Maximalpunktanzahl)
 4. ✅ `Bis` values are auto-derived on load and after any `Von` input change
 5. ✅ Changing point-step dropdown to „Halbe Punkte" updates all `Bis` values and persists to localStorage
 6. ✅ Recalculate (60 → 45 pts): verified scaled `von` values and derived `bis` values
@@ -491,7 +491,7 @@ Added explanatory comment why the file must live at the project root (scope cons
 - Table columns: headers and values centered; all three columns equal width (`33.33%`)
 - Number inputs inside editor table: text centered
 - „Berechnen" button: full width (`flex: 1`), `margin-top` added for spacing above it
-- „Neue Maximalpunktzahl" field moved to below the reference table (above „Berechnen")
+- „Neue Maximalpunktanzahl" field moved to below the reference table (above „Berechnen")
 - `.field-row` gains `padding-block: var(--space-md)` for vertical breathing room
 - Removed the footer entirely (`<footer>` + `.app-footer` CSS)
 - `.card` `gap` set to `0`; result section gets its own `gap: var(--space-md)` rule to preserve internal spacing
@@ -524,6 +524,262 @@ Controls how scaled von values are rounded to the nearest `newPointStep` multipl
 - Persisted to localStorage: `notenschluessel.rounding`
 - `recalculate(key, oldMax, newMax, newPointStep, rounding)` — new `rounding` parameter
 - Algorithm: `roundFn(raw / newPointStep) * newPointStep` where `roundFn` is `Math.ceil / .round / .floor`
+
+---
+
+## Phase 6: Print Grid Replacement
+
+### Step 22 — Replace SVG print grid with CSS-bordered HTML table `[x]`
+
+#### Goal
+
+The current inline SVG grid is blurry in Chrome's real print dialog due to anti-aliasing when
+pattern coordinates don't map cleanly to device pixels at print DPI. Replace it with an HTML
+`<table>` whose cells are sized with CSS `mm` units and bordered. This gives:
+
+- **Exact 5mm grid spacing** — CSS `mm` maps to physical millimetres in `@media print`
+- **Crisp lines** — cell borders are vector strokes, not rasterized bitmaps
+- **No "Print background graphics" required** — borders are element content, not CSS backgrounds
+- **Paper-agnostic** — table is over-provisioned (covers A3 landscape and beyond); page boundary
+  clips the excess naturally
+
+#### Changes
+
+##### `tools/step-22-generate-grid-table.mjs` (new)
+
+Generator script that writes the `<table class="print-grid">` HTML fragment to stdout.
+Dimensions: **80 columns × 110 rows** = 400mm wide × 550mm tall (covers A3 landscape + safety
+margin). 8,800 empty `<td>` elements. Script is kept permanently per AGENT.md convention.
+
+##### `index.html`
+
+Replace the `<svg class="print-grid">` element with the generated `<table class="print-grid">`.
+The table has no `<thead>`/`<tbody>` — bare `<tr>/<td>` rows only. `aria-hidden="true"` is kept.
+
+```html
+<!-- Print grid: HTML table with 5mm×5mm cells. Borders are element content
+     (not CSS background) so they print without "Print background graphics".
+     CSS mm units give exact physical spacing on any paper size/orientation.
+     Over-provisioned to 400×550mm; the page boundary clips the excess.
+     position:fixed in @media print anchors it to the printable area origin. -->
+<table class="print-grid" aria-hidden="true">
+  <!-- 110 rows × 80 columns; generated by tools/step-22-generate-grid-table.mjs -->
+  ...
+</table>
+```
+
+##### `src/css/style.css` — screen styles
+
+```css
+/* Hide print grid on screen */
+.print-grid {
+  display: none;
+}
+```
+
+##### `src/css/style.css` — `@media print`
+
+Remove `size: portrait` from `@page` — let the user choose orientation in the print dialog.
+Remove all SVG-specific `.print-grid` rules and comments.
+Add table grid rules:
+
+```css
+@page {
+  /* No size: portrait — orientation is the user's choice */
+  margin: 15mm;
+}
+
+/* Print grid table: position:fixed maps to the page box in Chromium's print
+   renderer. Cells are 5mm×5mm with a hairline border in physical CSS mm units.
+   Over-provisioned; the page boundary clips excess rows/columns. */
+.print-grid {
+  display: table;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.print-grid td {
+  width: 5mm;
+  height: 5mm;
+  padding: 0;
+  border: 0.25pt solid #ccc;
+}
+```
+
+All existing z-index layering rules for `.result-table` and `.result-max__label`
+(`box-shadow: 0 0 0 8px #fff` halos, `position: relative; z-index: 1`) are **unchanged** —
+they work identically with the table grid behind them.
+
+`background-color: transparent !important` on `body` and `.container` is kept (harmless,
+ensures no white block can cover the grid in edge cases).
+
+#### Fallback plan — `border-collapse: separate`
+
+If `border-collapse: collapse` on a `position: fixed` table causes a missing or doubled outer
+edge in Chrome's real print dialog, switch to:
+
+```css
+.print-grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  /* Provide the top and left page edges manually */
+  border-top: 0.25pt solid #ccc;
+  border-left: 0.25pt solid #ccc;
+}
+
+.print-grid td {
+  border-right: 0.25pt solid #ccc;
+  border-bottom: 0.25pt solid #ccc;
+  /* no border-top / border-left — avoids double lines */
+}
+```
+
+#### Testing
+
+1. Run `tools/step-22-generate-grid-table.mjs` → paste fragment into `index.html`
+2. Apply CSS changes in `style.css`
+3. Playwright PDF — A4 portrait → `tools/step-22-a4-portrait.pdf`
+4. Playwright PDF — A4 landscape → `tools/step-22-a4-landscape.pdf`
+5. Verify in **real Chrome** print dialog — crispness and grid alignment on both orientations
+6. Verify result table and label still sit above the grid (z-index layering intact)
+7. Verify screen view is unchanged (grid not visible on screen)
+
+---
+
+### Step 23 — Input validation fix and test suite `[x]`
+
+#### Problem
+
+Clicking „Berechnen" with an invalid key (e.g. grade 1 Von = 45, grade 2 Von = 50) produced a
+result instead of an error. Root cause: `handleCalculate` called `readDerivedKey()` before
+validating — `deriveKey()` silently clamps out-of-order values, so `validateKey` never saw the
+bad input.
+
+Additionally, `validateKey` lacked the minimum-gap rule: each Von must be at least equal to its
+Bis value (Von = Bis is allowed), which — since `bis[g] = von[g+1] + pointStep` — means adjacent
+Von values must differ by at least `pointStep` (grades 1–5). Grade 6 Von only needs to be ≥ 0
+(covered by the non-negative rule).
+
+#### Changes
+
+##### `src/js/grading.js`
+
+- Replaced `validateKey(key)` (operated on derived/clamped key) with `validateVon(vonAll, pointStep)`
+  that operates on the raw array of 6 Von values before any derivation.
+- Rules enforced by `validateVon`:
+  1. Exactly 6 values
+  2. All values are finite numbers (not empty / NaN)
+  3. All values are non-negative
+  4. Strictly descending: `von[g] > von[g+1]` for all g
+  5. Minimum gap: `von[g] >= von[g+1] + pointStep` (grades 1–5) — Von may equal Bis;
+     grade 6 has no extra minimum (non-negative rule covers it)
+- JSDoc comment is precise and self-contained — no ambiguous reasoning left in comments.
+
+##### `src/js/app.js`
+
+- `handleCalculate` now calls `parseVonFromForm` → `validateVon(vonAll, currentPointStep)` on
+  the raw values **first**. Only if valid does it call `deriveKey` and proceed to recalculate.
+- Import changed from `validateKey` to `validateVon`.
+
+##### `tools/step-22-validation-tests.mjs` (new)
+
+27-test suite covering all validation rules and edge cases:
+
+- Group 1: Valid inputs (default key, half-point key, Von=Bis cases, exact-minimum cases)
+- Group 2: Empty / missing values (NaN, undefined)
+- Group 3: Negative values
+- Group 4: Out-of-order Von values (the original bug, equal values, reversed)
+- Group 5: Minimum gap rule (Von=Bis valid, at-boundary valid, below-boundary invalid)
+- Group 6: Wrong array shape (empty, 5 elements, 7 elements, null)
+
+All 27 tests pass: `node tools/step-22-validation-tests.mjs`
+
+**Rule correction (post-initial implementation):** The minimum gap rule was tightened from
+`von[g] >= von[g+1] + 2×pointStep` to `von[g] >= von[g+1] + pointStep` after the user clarified
+that Von = Bis is valid (e.g. `[5,4,3,2,1,0]` with step=1 is a legal key).
+
+---
+
+### Step 24 — Post-recalculation distinctness validation `[x]`
+
+#### Problem
+
+When the new Maximalpunktanzahl is very small, rounding during recalculation can collapse multiple
+grade thresholds to the same value, producing a result key where multiple grades cover the same
+point value. Such a key is not useful.
+
+#### Decision
+
+Recalculate as normal, then validate the result Von array with `validateVon`. If invalid, show an
+error and do not render the result table. No minimum-value hint is shown — the user must try a
+larger value themselves.
+
+#### Changes
+
+##### `src/js/app.js`
+
+- In `handleCalculate`, after `recalculate()` returns, extract the Von values from the result and
+  call `validateVon(resultVon, currentNewPointStep)`.
+- If invalid, call `showErrors()` with the message:
+  _„Die neue Maximalpunktanzahl ist zu klein — der berechnete Notenschlüssel ist nicht eindeutig.
+  Bitte wähle einen größeren Wert."_
+- `renderResult` and `setEditorCollapsed` are only reached if validation passes.
+
+---
+
+### Step 25 — Dynamic `min`/`max`/`step` on Von inputs + `:invalid` red border `[x]`
+
+#### Problem
+
+The Von inputs in the reference table had no `max` attribute and a static `min="0"`, giving the
+browser no information about valid ranges. On mobile (iOS), the numeric keyboard already appeared
+correctly, but the stepper arrows on desktop were unbounded and no visual feedback flagged
+out-of-range values before the user hit Berechnen.
+
+#### Decision
+
+- Add a `updateVonConstraints()` function that sets `min`, `max`, and `step` on all 6 Von inputs
+  dynamically from the current form state and `currentPointStep`.
+- Rerun it on every input event (all Von values recomputed each time, so cascading changes are
+  handled automatically).
+- Use CSS `:invalid` to show a 2px red border (`--color-error`) on any out-of-range input.
+  `:invalid` fires immediately — no interaction guard — so fields that are invalid on load are
+  flagged straight away.
+- The JS validation in `handleCalculate` remains the authoritative guard; the attributes and
+  `:invalid` styling are a complementary first line of feedback.
+
+#### Constraints per grade
+
+| Grade | `min`                  | `max`                      |
+| ----- | ---------------------- | -------------------------- |
+| 1     | `von[2] + pointStep`   | _(none — unbounded above)_ |
+| 2–5   | `von[g+1] + pointStep` | `von[g-1] - pointStep`     |
+| 6     | `0`                    | `von[5] - pointStep`       |
+
+`step = currentPointStep` for all inputs.
+
+#### Changes
+
+##### `src/js/app.js`
+
+- New `updateVonConstraints()` function: reads all 6 Von values via `FormData`, then sets
+  `input.min`, `input.max` (or removes it for grade 1), and `input.step` on each Von input.
+- `updateReadonlyCells()` now calls `updateVonConstraints()` at the end — covers all input events
+  and point-step changes (which already call `updateReadonlyCells()`).
+- `init()` calls `updateVonConstraints()` after `renderEditor()` so constraints are set on first
+  load.
+
+##### `src/css/style.css`
+
+- `.editor-table input[type="number"]:invalid` — `border-width: 2px; border-color: var(--color-error)`
+- `.editor-table input[type="number"]:invalid:focus` — keeps red border over the blue focus style
+- `.field-row input:invalid` — same 2px red border for the "Neue Maximalpunktanzahl" input
+- `.field-row input:invalid:focus` — same focus override
 
 ---
 

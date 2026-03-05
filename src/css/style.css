@@ -226,6 +226,15 @@ ol {
   border-color: var(--color-primary);
 }
 
+.field-row input:invalid {
+  border-width: 2px;
+  border-color: var(--color-error);
+}
+
+.field-row input:invalid:focus {
+  border-color: var(--color-error);
+}
+
 /* Scrollable table container on small screens */
 .table-wrapper {
   overflow-x: auto;
@@ -280,6 +289,15 @@ ol {
 .editor-table input[type="number"]:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+.editor-table input[type="number"]:invalid {
+  border-width: 2px;
+  border-color: var(--color-error);
+}
+
+.editor-table input[type="number"]:invalid:focus {
+  border-color: var(--color-error);
 }
 
 /* Hide number input spinners (optional, keeps it clean) */
@@ -494,7 +512,7 @@ ol {
 
 @media print {
   @page {
-    size: portrait;
+    /* No size: portrait — orientation is the user's choice in the print dialog */
     margin: 15mm;
   }
 
@@ -506,8 +524,8 @@ ol {
   }
 
   body {
-    /* Transparent so the SVG grid shows through everywhere except
-       the table cells themselves (which have background: #fff) */
+    /* Transparent so the print grid table shows through; result-table
+       cells have background:#fff to stay opaque over the grid. */
     background-color: transparent !important;
     color: #000;
     padding: 0;
@@ -515,28 +533,45 @@ ol {
 
   .container {
     max-width: 100%;
-    padding: 0;
+    margin-inline: 0;
+    padding: 0 !important;
     gap: 0;
     background-color: transparent !important;
   }
 
-  /* SVG grid: fixed at page origin, covering the full printable area.
-     position:fixed maps to the page box in Chromium's PDF renderer.
-     z-index:0 is required — negative values are buried behind the page
-     canvas; the table and label use box-shadow:#fff to block the grid
-     locally without creating a full-width layout box.
-     The SVG width/height attributes are required by Chromium's PDF renderer
-     to anchor the userSpaceOnUse pattern coordinate system; they do not
-     fix the rendered size — CSS width/height:100% overrides those. */
+  /* .result-section also carries .card which has padding: var(--space-lg) */
+  .card {
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Print grid table: fixed at page origin, covering the full printable area.
+     position:fixed maps to the page box in Chromium's print renderer.
+     Cells are 5mm×5mm with a hairline border — CSS mm gives exact physical
+     spacing on any paper size and orientation. The table is over-provisioned
+     (400×550mm); the page boundary clips excess rows and columns.
+     z-index:0 sits behind the result table and label (z-index:1). */
   .print-grid {
-    display: block;
+    display: table;
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    /* Explicit width = 80 cols × 5mm. Required for table-layout:fixed to
+       honour the per-cell width:5mm rather than dividing available space. */
+    width: 400mm;
     z-index: 0;
     pointer-events: none;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .print-grid td {
+    width: 5mm;
+    height: 5mm;
+    padding: 0;
+    border: 0.2pt solid #e8e8e8;
   }
 
   .result-section {
@@ -596,9 +631,9 @@ ol {
     overflow: visible;
   }
 
-  /* position:relative + z-index:1 places the table above the SVG grid
-     (z-index:0). box-shadow spread creates the white halo without affecting
-     layout width, so the grid stays visible to the right of the table. */
+  /* position:relative + z-index:1 places the result table above the print
+     grid (z-index:0). box-shadow spread creates a white halo without
+     affecting layout width, so the grid stays visible to the right. */
   .result-table {
     position: relative;
     z-index: 1;

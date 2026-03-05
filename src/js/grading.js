@@ -97,53 +97,84 @@ export function recalculate(key, oldMax, newMax, newPointStep, rounding) {
 }
 
 /**
- * Validate a grading key array (new format).
+ * Validate the 6 raw user-supplied Von values before any clamping or derivation.
  *
- * Rules checked:
- * - Exactly 6 rows, one per grade 1–6
- * - All von values are finite and non-negative
- * - von ≥ bis for every row
- * - Von values are strictly descending across grades
+ * Must be called with the raw form values — NOT after deriveKey(), because
+ * deriveKey() silently clamps invalid input and would mask errors.
  *
- * @param {Array<{grade: number, von: number, bis: number}>} key
+ * Rules checked (in order):
+ *
+ * 1. Exactly 6 values.
+ * 2. All values are finite numbers (not empty / NaN).
+ * 3. All values are non-negative.
+ * 4. Von values are strictly descending: von[g] > von[g+1] for all g.
+ * 5. Minimum gap rule — Von must be >= its Bis value (Von = Bis is allowed):
+ *
+ *      bis[g] = von[g+1] + pointStep   (grades 1–5)
+ *      bis[6] = 0                       (fixed)
+ *
+ *      Required: von[g] >= bis[g]
+ *
+ *      Substituting bis[g] for grades 1–5:
+ *        von[g] >= von[g+1] + pointStep
+ *
+ *      For grade 6:
+ *        von[6] >= 0
+ *        (already covered by rule 3: non-negative)
+ *
+ *    In other words: adjacent Von values must differ by at least pointStep
+ *    (grades 1–5). Grade 6 Von >= 0 is sufficient.
+ *
+ * @param {number[]} vonAll    Array of 6 raw von values [von1..von6]
+ * @param {number}   pointStep 1 or 0.5
  * @returns {{ valid: boolean, errors: string[] }}
  */
-export function validateKey(key) {
+export function validateVon(vonAll, pointStep) {
   const errors = [];
 
-  if (!Array.isArray(key) || key.length !== 6) {
+  if (!Array.isArray(vonAll) || vonAll.length !== 6) {
     errors.push("Der Notenschlüssel muss genau 6 Zeilen enthalten.");
     return { valid: false, errors };
   }
 
-  const sorted = [...key].sort((a, b) => a.grade - b.grade);
+  // 1. All values must be finite numbers
+  const allFinite = vonAll.every((v) => Number.isFinite(v));
+  if (!allFinite) {
+    vonAll.forEach((v, i) => {
+      if (!Number.isFinite(v)) {
+        errors.push(`Note ${i + 1}: Von-Wert fehlt oder ist ungültig.`);
+      }
+    });
+    // Cannot check order rules with non-finite values — stop here
+    return { valid: false, errors };
+  }
 
-  sorted.forEach((row) => {
-    const label = `Note ${row.grade}`;
-    if (!Number.isFinite(row.von) || row.von < 0) {
-      errors.push(`${label}: Von-Wert muss eine nicht-negative Zahl sein.`);
-    }
-    if (!Number.isFinite(row.bis) || row.bis < 0) {
-      errors.push(`${label}: Bis-Wert muss eine nicht-negative Zahl sein.`);
-    }
-    if (
-      Number.isFinite(row.von) &&
-      Number.isFinite(row.bis) &&
-      row.von < row.bis
-    ) {
-      errors.push(`${label}: Von-Wert darf nicht kleiner als Bis-Wert sein.`);
+  // 2. All values must be non-negative
+  vonAll.forEach((v, i) => {
+    if (v < 0) {
+      errors.push(`Note ${i + 1}: Von-Wert darf nicht negativ sein.`);
     }
   });
 
-  // Strictly descending von values
-  for (let i = 0; i < sorted.length - 1; i++) {
-    if (
-      Number.isFinite(sorted[i].von) &&
-      Number.isFinite(sorted[i + 1].von) &&
-      sorted[i].von <= sorted[i + 1].von
-    ) {
+  // 3. Strictly descending (grade 1 > grade 2 > … > grade 6)
+  for (let i = 0; i < vonAll.length - 1; i++) {
+    if (vonAll[i] <= vonAll[i + 1]) {
       errors.push(
-        `Note ${sorted[i].grade}: Von-Wert muss größer sein als der Von-Wert von Note ${sorted[i + 1].grade}.`,
+        `Note ${i + 1}: Von-Wert (${vonAll[i]}) muss größer sein als Von-Wert von Note ${i + 2} (${vonAll[i + 1]}).`,
+      );
+    }
+  }
+
+  // 4. Minimum gap: von[g] >= von[g+1] + pointStep  (grades 1–5)
+  //    Derived from: von[g] >= bis[g], where bis[g] = von[g+1] + pointStep.
+  //    Grade 6: von[6] >= 0 is already covered by rule 3 (non-negative).
+  for (let i = 0; i < 5; i++) {
+    const grade = i + 1;
+    const bis = vonAll[i + 1] + pointStep;
+    if (vonAll[i] < bis) {
+      errors.push(
+        `Note ${grade}: Von-Wert (${vonAll[i]}) muss mindestens ${bis} sein ` +
+          `(Bis = ${bis}).`,
       );
     }
   }
