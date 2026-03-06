@@ -783,6 +783,66 @@ out-of-range values before the user hit Berechnen.
 
 ---
 
+### Step 26 — GitHub link button (bottom-left FAB) `[x]`
+
+Add a second floating action button in the bottom-left corner, mirroring the existing ⓘ button on the bottom right. It links to the GitHub repository.
+
+#### Element
+
+An `<a>` tag (not `<button>`) — semantically correct for external navigation:
+
+```html
+<!-- GitHub link — fixed, always visible -->
+<a
+  href="https://github.com/baxerus/notenschluesselrechner"
+  target="_blank"
+  rel="noopener noreferrer"
+  class="btn-github"
+  aria-label="GitHub-Repository öffnen"
+>
+  <!-- GitHub mark SVG, 20×20, fill="currentColor" -->
+  <svg ...></svg>
+</a>
+```
+
+Inserted in `index.html` just before the existing `#btn-info` button.
+
+#### CSS (`src/css/style.css`)
+
+New `.btn-github` rule after `.btn-info:hover` — identical shape/shadow/color, but `left` instead of `right`:
+
+```css
+.btn-github {
+  position: fixed;
+  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  left: var(--space-lg);
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition);
+  z-index: 100;
+  text-decoration: none;
+}
+
+.btn-github:hover {
+  background-color: var(--color-primary-dark);
+}
+```
+
+Also add `.btn-github` to the `@media print` hide rule alongside `.btn-info`.
+
+#### No JavaScript changes needed.
+
+---
+
 ## Open Questions / Decisions
 
 | #   | Question                                                                            | Decision                                                                                            |
