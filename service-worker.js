@@ -11,7 +11,7 @@
  * Cache is versioned — bumping CACHE_NAME triggers re-caching on next visit.
  */
 
-const CACHE_NAME = "notenschluessel-v3";
+const CACHE_NAME = "notenschluessel-v4";
 
 const APP_SHELL = [
   "/",
@@ -24,6 +24,27 @@ const APP_SHELL = [
   "/assets/icons/apple-touch-icon.png",
   "/assets/icons/icon-192.png",
   "/assets/icons/icon-512.png",
+  // iOS splash screens
+  "/assets/splash/splash-iphone-se-gen1.png",
+  "/assets/splash/splash-iphone-se-gen2.png",
+  "/assets/splash/splash-iphone-8-plus.png",
+  "/assets/splash/splash-iphone-x-xs-11pro.png",
+  "/assets/splash/splash-iphone-xs-max-11pro-max.png",
+  "/assets/splash/splash-iphone-xr-11.png",
+  "/assets/splash/splash-iphone-12-mini-13-mini.png",
+  "/assets/splash/splash-iphone-12-13-14-16e.png",
+  "/assets/splash/splash-iphone-12-pro-max-13-pro-max-14-plus.png",
+  "/assets/splash/splash-iphone-14-pro-15-16.png",
+  "/assets/splash/splash-iphone-14-pro-max-15-plus-16-plus.png",
+  "/assets/splash/splash-iphone-16-pro-max.png",
+  "/assets/splash/splash-ipad-9-7.png",
+  "/assets/splash/splash-ipad-10-5-air3-pro10-5.png",
+  "/assets/splash/splash-ipad-mini-6-7.png",
+  "/assets/splash/splash-ipad-pro-11-gen1-2-3-4.png",
+  "/assets/splash/splash-ipad-10-gen10-air4-5.png",
+  "/assets/splash/splash-ipad-pro-12-9.png",
+  "/assets/splash/splash-ipad-pro-13.png",
+  "/assets/splash/splash-ipad-pro-11-gen6.png",
 ];
 
 // ---------------------------------------------------------------------------

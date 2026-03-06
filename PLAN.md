@@ -881,6 +881,32 @@ Applied to `row.von`, `row.bis`, and `newMax` in `renderResult()`. The result ta
 
 ---
 
+### Step 28 — iOS splash screens `[x]`
+
+Add `apple-touch-startup-image` splash screens for all current iPhones and iPads.
+
+#### Why explicit PNG files are required
+
+iOS Safari does not auto-generate a splash screen from the manifest. It requires one pre-rendered PNG per device screen size, linked via `<link rel="apple-touch-startup-image" media="...">` tags with `device-width`, `device-height`, and `-webkit-device-pixel-ratio` media queries.
+
+#### Generator script — `tools/step-28-generate-splash-screens.mjs`
+
+Produces 20 PNGs covering all current iPhones (SE gen1 through iPhone 16 Pro Max) and iPads (9.7" through iPad Pro 13"). Each image is the device's actual pixel resolution in portrait orientation.
+
+Design: `#3B6FA0` background, centred `𝄞±` symbol, app name „Notenschlüsselrechner" below.
+
+Output directory: `assets/splash/`
+
+#### `index.html`
+
+20 `<link rel="apple-touch-startup-image">` tags added to `<head>`, grouped by iPhones / iPads with a comment block.
+
+#### `service-worker.js`
+
+All 20 splash PNGs added to `APP_SHELL` pre-cache list. Cache version bumped `v3` → `v4`.
+
+---
+
 ## Open Questions / Decisions
 
 | #   | Question                                                                            | Decision                                                                                            |
