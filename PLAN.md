@@ -843,6 +843,44 @@ Also add `.btn-github` to the `@media print` hide rule alongside `.btn-info`.
 
 ---
 
+### Step 27 — iOS install guide icon improvements + UX polish `[x]`
+
+Improved the iOS install guide overlay and input keyboard behaviour.
+
+#### iOS install guide — inline SVG icons
+
+Replaced the plain text placeholder `(↑)` with accurate inline SVG icons matching the actual iOS UI:
+
+- **Share icon** (step 1): custom SVG — upward arrow with square tray below, short inward tabs at top corners, `stroke-width="2.5"`, `viewBox="0 0 24 32"` (taller than wide so the square tray has correct proportions), `fill="none"`.
+- **Add to Home Screen icon** (step 2): plus sign inside a rounded square, moved inside the opening quote so the layout matches the iOS menu (`„⊞ Zum Home-Bildschirm"`).
+- Step 2 label forced onto its own line with `<br>` for readability.
+- Trailing `.` removed from all three list items.
+- `.install-icon` CSS: `width/height: 1em`, `vertical-align: -0.15em`, `overflow: visible`. No `fill` set in CSS — each SVG controls its own fill via attribute.
+- `.install-steps` gap increased from `var(--space-sm)` to `var(--space-md)`.
+
+#### `inputmode="decimal"` on all number inputs
+
+Added `inputmode="decimal"` to all `type="number"` inputs:
+
+- Von inputs in `renderEditor()` (`src/js/app.js`)
+- `#new-max` input (`index.html`)
+
+**Rationale:** `type="number"` alone shows the full iOS keyboard (with all letters). `inputmode="decimal"` overrides the keyboard to a clean numeric pad with a decimal key — while keeping `type="number"` for desktop spinner arrows and native browser validation. No JS parsing changes needed.
+
+#### Decimal separator in result table
+
+Added `formatNum(n)` helper in `app.js` that replaces `.` with `,` for display:
+
+```js
+function formatNum(n) {
+  return String(n).replace(".", ",");
+}
+```
+
+Applied to `row.von`, `row.bis`, and `newMax` in `renderResult()`. The result table (which is also the print output) now shows German decimal notation (`0,5` instead of `0.5`). Values are never read back from the DOM so this is display-only with no parsing side effects.
+
+---
+
 ## Open Questions / Decisions
 
 | #   | Question                                                                            | Decision                                                                                            |

@@ -12,6 +12,13 @@ German teachers create a **Notenschlüssel** — a table mapping point ranges to
 - Choose point steps (whole or half points) and rounding mode (ceil / round / floor)
 - One-click rescaling to any new maximum
 - Auto-saves all settings and last result to `localStorage`
-- Print layout with a graph-paper grid for physical grade sheets
+- **Print layout** with a graph-paper grid for physical grade sheets
 - iOS PWA install guide
 - Offline support via service worker
+
+**Usage**
+
+Simply [use it via the GitHub page](https://baxerus.github.io/notenschluesselrechner/)  
+You can **install** it as a **WebApp** on **iOS** (that even will work **offline**)
+
+Of course you can also host it somewhere yourself 👍
