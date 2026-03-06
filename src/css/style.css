@@ -401,6 +401,31 @@ ol {
   background-color: var(--color-primary-dark);
 }
 
+/* GitHub link button — fixed, bottom-left */
+.btn-github {
+  position: fixed;
+  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  left: var(--space-lg);
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition);
+  z-index: 100;
+  text-decoration: none;
+}
+
+.btn-github:hover {
+  background-color: var(--color-primary-dark);
+}
+
 .form-actions {
   display: flex;
   gap: var(--space-sm);
@@ -519,6 +544,7 @@ ol {
   .app-header,
   #calc-form,
   .btn-info,
+  .btn-github,
   .install-overlay {
     display: none !important;
   }
