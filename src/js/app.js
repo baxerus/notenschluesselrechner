@@ -103,7 +103,7 @@ function renderEditor(key) {
 
     tr.innerHTML = `
       <td class="col-grade">${row.grade}</td>
-      <td class="col-von"><input type="number" name="von-${row.grade}" value="${row.von}" min="0" step="${currentPointStep}" required aria-label="Von Punkte Note ${row.grade}"></td>
+      <td class="col-von"><input type="number" inputmode="decimal" name="von-${row.grade}" value="${row.von}" min="0" step="${currentPointStep}" required aria-label="Von Punkte Note ${row.grade}"></td>
       <td class="col-bis"><span class="cell-readonly">${row.bis}</span></td>
     `;
     editorBody.appendChild(tr);
@@ -186,6 +186,10 @@ function autoSave() {
  * @param {Array<{grade: number, von: number, bis: number}>} key
  * @param {number} newMax
  */
+function formatNum(n) {
+  return String(n).replace(".", ",");
+}
+
 function renderResult(key, newMax) {
   const sorted = [...key].sort((a, b) => a.grade - b.grade);
   resultBody.innerHTML = "";
@@ -194,14 +198,14 @@ function renderResult(key, newMax) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${row.grade}</td>
-      <td>${row.von}</td>
-      <td>${row.bis}</td>
+      <td>${formatNum(row.von)}</td>
+      <td>${formatNum(row.bis)}</td>
     `;
     resultBody.appendChild(tr);
   });
 
   resultSection.querySelector(".result-max").innerHTML =
-    `<span class="result-max__label">Maximalpunktanzahl: ${newMax}</span>`;
+    `<span class="result-max__label">Maximalpunktanzahl: ${formatNum(newMax)}</span>`;
   resultSection.hidden = false;
 }
 
