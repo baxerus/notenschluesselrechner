@@ -941,3 +941,31 @@ Added a subtle diagonal gradient to all app icons and splash screens.
 - The devcontainer name is `Notenschluesselrechner` (ASCII, Docker-compatible).
 - Icons in `assets/icons/` are placeholders — replace with final artwork before publishing.
 - Grading key data structure: each row = `{ min: number, max: number, grade: number }` where `grade` is 1–6.
+
+### Step 30 — Strict Input Validation & UX for Point-Step Divisibility `[x]`
+
+#### Problem
+
+Fields getting an invalid decimal value (like `10.5` when "Ganze Punkte" is selected) are visually flagged via CSS `:invalid` thanks to dynamic `step` attributes, but the „Berechnen" action still accepts them because JS validation lacks a step-divisibility check. Additionally, iOS keyboards show the decimal separator even when whole numbers are selected.
+
+#### Changes
+
+1. **`src/js/grading.js` (`validateVon`)**
+   - Add a rule to ensure each value is exactly divisible by the `pointStep`.
+   - Use `Number.isInteger(v / pointStep)`.
+   - If a value fails, push an error message: `"Note X: Von-Wert (${v}) entspricht nicht dem gewählten Mindestpunktabstand."`
+
+2. **`src/js/app.js` (`handleCalculate`)**
+   - Explicitly validate the „Neue Maximalpunktanzahl" (`newMax`) against `currentNewPointStep` with the same `Number.isInteger(newMax / currentNewPointStep)` logic.
+   - If invalid, show the error: `"Die neue Maximalpunktanzahl von ${newMax} entspricht nicht dem neuen Mindestpunktabstand."`
+
+3. **`src/js/app.js` (Dynamic Constraints & `inputmode`)**
+   - In `updateVonConstraints()`: In addition to setting `input.step`, also dynamically update the `inputmode` attribute: `input.inputMode = currentPointStep === 1 ? "numeric" : "decimal"`.
+   - In `handleNewPointStepChange()`: Update the `newMaxInput` field similarly: `newMaxInput.step = currentNewPointStep` and `newMaxInput.inputMode = currentNewPointStep === 1 ? "numeric" : "decimal"`.
+   - Ensure these logic lines also run on initial page load (in `init()`) so the DOM is perfectly synced with the cached values.
+
+4. **`tools/step-22-validation-tests.mjs`**
+   - Add test cases to cover divisibility validation:
+     - `step=1` with `10.5` (fails)
+     - `step=0.5` with `10.7` (fails)
+     - `step=0.5` with `10.5` (passes)

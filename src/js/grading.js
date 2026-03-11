@@ -179,6 +179,15 @@ export function validateVon(vonAll, pointStep) {
     }
   }
 
+  // 5. Divisibility check: Each value must be exactly divisible by pointStep
+  vonAll.forEach((v, i) => {
+    if (!Number.isInteger(v / pointStep)) {
+      errors.push(
+        `Note ${i + 1}: Von-Wert (${v}) entspricht nicht dem gewählten Mindestpunktabstand.`,
+      );
+    }
+  });
+
   return { valid: errors.length === 0, errors };
 }
 
