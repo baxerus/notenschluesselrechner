@@ -907,6 +907,24 @@ All 20 splash PNGs added to `APP_SHELL` pre-cache list. Cache version bumped `v3
 
 ---
 
+### Step 29 — Add subtle gradient to app icons and splash screens `[x]`
+
+Added a subtle diagonal gradient to all app icons and splash screens.
+
+#### Design change
+
+- Background color `#3B6FA0` now has a diagonal linear gradient:
+  - Top-left: `#5A8AB8` (~15% lighter)
+  - Bottom-right: `#2D5080` (~15% darker)
+- Gradient runs from top-left to bottom-right (diagonal)
+
+#### Generator scripts
+
+- `tools/step-02-generate-placeholder-icons-gradient.mjs` — icons with gradient
+- `tools/step-28-generate-splash-screens-gradient.mjs` — splash screens with gradient
+
+---
+
 ## Open Questions / Decisions
 
 | #   | Question                                                                            | Decision                                                                                            |
