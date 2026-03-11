@@ -149,6 +149,7 @@ function updateVonConstraints() {
     const grade = i + 1; // grades 1–6
 
     input.step = String(currentPointStep);
+    input.inputMode = currentPointStep === 1 ? "numeric" : "decimal";
 
     if (grade === 1) {
       // min: must cover at least grade 2's von + pointStep
@@ -285,6 +286,13 @@ function handleCalculate(e) {
     return;
   }
 
+  if (!Number.isInteger(newMax / currentNewPointStep)) {
+    showErrors([
+      `Die neue Maximalpunktanzahl von ${newMax} entspricht nicht dem neuen Mindestpunktabstand.`,
+    ]);
+    return;
+  }
+
   const result = recalculate(
     key,
     oldMax,
@@ -317,6 +325,8 @@ function handlePointStepChange() {
 function handleNewPointStepChange() {
   currentNewPointStep = Number(newPointStepSelect.value);
   saveNewPointStep(currentNewPointStep);
+  newMaxInput.step = String(currentNewPointStep);
+  newMaxInput.inputMode = currentNewPointStep === 1 ? "numeric" : "decimal";
 }
 
 function handleRoundingChange() {
@@ -354,6 +364,10 @@ function init() {
   newPointStepSelect.value = String(currentNewPointStep);
   currentRounding = loadRounding();
   roundingSelect.value = currentRounding;
+
+  // Initialize new max input constraints
+  newMaxInput.step = String(currentNewPointStep);
+  newMaxInput.inputMode = currentNewPointStep === 1 ? "numeric" : "decimal";
 
   // Load saved key or fall back to default
   const savedKey = loadKey();
