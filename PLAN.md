@@ -378,7 +378,7 @@ Max 60 points, whole points, matching the current default:
 
 After clicking „Berechnen", the editor section (`#editor-section`) collapses to show only its heading. The user can re-expand it by clicking the heading/toggle.
 
-#### Behaviour
+#### Behavior
 
 - On „Berechnen": collapse the editor body, show result section.
 - The heading row gains a `▶` / `▼` chevron indicating collapsed/expanded state.
@@ -417,7 +417,7 @@ Below the result table, a full-width faint square grid fills the remaining page 
 - Grid is drawn with CSS `background-image` using `repeating-linear-gradient`:
   - Horizontal lines every `5mm`.
   - Vertical lines every `5mm`.
-  - Line colour: `#CCCCCC` at `20%` opacity → use `rgba(204, 204, 204, 0.2)`.
+  - Line color: `#CCCCCC` at `20%` opacity → use `rgba(204, 204, 204, 0.2)`.
   - Line thickness: `0.25pt` (hairline).
 - The `div` has `flex: 1` so it expands to fill remaining page height after the table.
 - Print container uses `display: flex; flex-direction: column; min-height: 100vh` so the grid div fills all remaining space.
@@ -537,7 +537,7 @@ The current inline SVG grid is blurry in Chrome's real print dialog due to anti-
 pattern coordinates don't map cleanly to device pixels at print DPI. Replace it with an HTML
 `<table>` whose cells are sized with CSS `mm` units and bordered. This gives:
 
-- **Exact 5mm grid spacing** — CSS `mm` maps to physical millimetres in `@media print`
+- **Exact 5mm grid spacing** — CSS `mm` maps to physical millimeters in `@media print`
 - **Crisp lines** — cell borders are vector strokes, not rasterized bitmaps
 - **No "Print background graphics" required** — borders are element content, not CSS backgrounds
 - **Paper-agnostic** — table is over-provisioned (covers A3 landscape and beyond); page boundary
@@ -845,7 +845,7 @@ Also add `.btn-github` to the `@media print` hide rule alongside `.btn-info`.
 
 ### Step 27 — iOS install guide icon improvements + UX polish `[x]`
 
-Improved the iOS install guide overlay and input keyboard behaviour.
+Improved the iOS install guide overlay and input keyboard behavior.
 
 #### iOS install guide — inline SVG icons
 
@@ -969,3 +969,38 @@ Fields getting an invalid decimal value (like `10.5` when "Ganze Punkte" is sele
      - `step=1` with `10.5` (fails)
      - `step=0.5` with `10.7` (fails)
      - `step=0.5` with `10.5` (passes)
+
+---
+
+### Step 31 — Show Rounding Method in Result Header `[ ]`
+
+#### Problem
+
+The result header only shows "Maximalpunktanzahl: XYZ" without indicating which rounding method was used during recalculation. Users may not remember or notice which rounding mode (Immer aufrunden, Kaufmännisch runden, Immer abrunden) was selected.
+
+#### Changes
+
+1. **`src/js/app.js` (`renderResults`)**
+   - At line 208, modify the `result-max` HTML to include the rounding method in parentheses by looking up the text from the `<select id="rounding">` element using `currentRounding` (single source of truth):
+     ```javascript
+     const roundingLabel =
+       [...roundingSelect.options].find((opt) => opt.value === currentRounding)
+         ?.text || "Kaufmännisch runden";
+     resultSection.querySelector(".result-max").innerHTML =
+       `<span class="result-max__label">Maximalpunktanzahl: ${formatNum(newMax)}<br>(${roundingLabel})</span>`;
+     ```
+
+2. **`src/css/style.css` (Print layout tweaks)**
+   - In the `@media print` section for `.result-max`, add `margin-bottom: 4px` and `line-height: 1.2`. Together with the `.result-section` gap of `4px`, this creates exactly `8px` of physical space between the text block and the table. This guarantees that the table's `8px` white `box-shadow` precisely touches the text boundary without overlapping the descender letters (like "g") or the table's top border. This exactly halves the overall original gap.
+   - In the `@media print` section for `.result-max__label`, add `display: inline-block;`. By making it a single inline block rather than an inline element spanning multiple lines, the 8px white `box-shadow` wraps around the entire block correctly instead of clipping the text of adjacent lines.
+
+3. **Verification**
+   - The change automatically applies to both screen display and print layout since it uses the same HTML element.
+   - Test by: selecting each rounding option, calculating results, and confirming the label shows the correct method in both normal view and print preview without any text cut off.
+
+#### Why this works
+
+- The `roundingSelect` variable is already available in the scope where `renderResults` is called.
+- Looking up from the `<select>` element ensures the displayed text always matches the UI option labels — single source of truth.
+- The HTML element `.result-max` is styled with transparent background in print (see line 632 in `style.css`), so the text is legible in both contexts.
+- Adding specific margin in the `@media print` block keeps the delicate print styling intact without affecting the normal view.

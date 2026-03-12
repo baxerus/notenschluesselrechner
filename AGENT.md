@@ -139,6 +139,12 @@ The in-app iOS install guide must:
 - No box shadows, no background colors on cells
 - Set a print title via `<title>` (already the app name)
 
+## Service Worker & Caching
+
+The app uses a cache-first service worker (`service-worker.js`) to allow offline PWA usage.
+Because of this strategy, **you must bump the `CACHE_NAME` version string in `service-worker.js` whenever you modify any cached file** (like `.js`, `.css`, or `.html` files).
+If you do not bump the version, users who already installed the PWA will continue to see the old cached version of your changes. Always consider this as part of completing a step!
+
 ## Testing with Playwright CLI
 
 The `playwright-cli` skill is available in this environment.
@@ -158,8 +164,12 @@ playwright-cli snapshot              # inspect current DOM state
 playwright-cli fill e3 "60"          # fill input by element ref
 playwright-cli click e7              # click button by element ref
 playwright-cli localstorage-list     # verify saved data
+playwright-cli screenshot --filename=tools/test-screen.png  # verify visuals
+playwright-cli pdf --filename=tools/test-print.pdf          # verify print layout
 playwright-cli close
 ```
+
+> **Note:** When generating visual test artifacts like screenshots (`.png`) or print layouts (`.pdf`), always save these files into the `tools/` directory to keep the project root clean.
 
 To test with a WebKit engine (closest to iOS Safari):
 

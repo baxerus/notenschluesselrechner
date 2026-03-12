@@ -630,6 +630,8 @@ ol {
     color: #000;
     white-space: nowrap;
     background: transparent;
+    margin-bottom: 4px; /* Prevent text clipping by the table below */
+    line-height: 1.2;
   }
 
   /* White background scoped to the text only — the <p> is transparent so
@@ -637,6 +639,7 @@ ol {
   .result-max__label {
     position: relative;
     z-index: 1;
+    display: inline-block;
     background: #fff;
     box-shadow: 0 0 0 8px #fff;
   }

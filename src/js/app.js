@@ -131,7 +131,7 @@ function updateReadonlyCells() {
 
 /**
  * Update min, max, and step attributes on all Von inputs based on their
- * neighbours' current values and the active point step.
+ * neighbors' current values and the active point step.
  *
  * Grade 1 : min = von[2] + pointStep  (no max — unbounded above)
  * Grades 2–5: min = von[g+1] + pointStep,  max = von[g-1] - pointStep
@@ -205,8 +205,11 @@ function renderResult(key, newMax) {
     resultBody.appendChild(tr);
   });
 
+  const roundingLabel =
+    [...roundingSelect.options].find((opt) => opt.value === currentRounding)
+      ?.text || "Kaufmännisch gerundet";
   resultSection.querySelector(".result-max").innerHTML =
-    `<span class="result-max__label">Maximalpunktanzahl: ${formatNum(newMax)}</span>`;
+    `<span class="result-max__label">Maximalpunktanzahl: ${formatNum(newMax)}<br>(${roundingLabel})</span>`;
   resultSection.hidden = false;
 }
 
@@ -340,7 +343,7 @@ function handleEditorInput() {
 }
 
 // ---------------------------------------------------------------------------
-// Initialisation
+// Initialization
 // ---------------------------------------------------------------------------
 
 function init() {

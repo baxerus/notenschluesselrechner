@@ -11,7 +11,7 @@
  * Cache is versioned — bumping CACHE_NAME triggers re-caching on next visit.
  */
 
-const CACHE_NAME = "notenschluessel-v6";
+const CACHE_NAME = "notenschluessel-v7";
 
 const APP_SHELL = [
   "/",
