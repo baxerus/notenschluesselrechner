@@ -1031,3 +1031,31 @@ The grades (1–6) in both the reference table and the recalculated result table
 - The reference table (editor) shows circled numbers for grades
 - The result table shows circled numbers for grades
 - Print view (via @media print) shows circled numbers for grades
+
+---
+
+### Step 33 — Fix service worker 404 and deprecated meta tag `[x]`
+
+#### Problem
+
+1. Service worker registration fails with 404 because it's registered at `/service-worker.js` which resolves to the GitHub Pages repo root (`https://baxerus.github.io/service-worker.js`) instead of the subdirectory where the app lives (`https://baxerus.github.io/notenschluesselrechner/`).
+2. The APP_SHELL files in the service worker use absolute paths (`/index.html`, `/src/js/app.js`, etc.) which also resolve to the repo root, causing "Request failed" errors during cache.addAll.
+3. The `<meta name="apple-mobile-web-app-capable">` tag is deprecated in favor of `<meta name="mobile-web-app-capable">`.
+
+#### Changes
+
+1. **`index.html`** (line ~9432):
+   - Change `.register("/service-worker.js")` to `.register("./service-worker.js")` so it resolves relative to the current path.
+
+2. **`service-worker.js`**:
+   - Change all paths in `APP_SHELL` array from absolute (`/index.html`) to relative (`./index.html`).
+   - Bump `CACHE_NAME` from `v8` to `v9` to force cache refresh.
+
+3. **`index.html`** (line ~118):
+   - Add `<meta name="mobile-web-app-capable" content="yes">` alongside the existing apple-mobile-web-app-capable tag.
+
+#### Verification
+
+- Service worker registers successfully (check DevTools → Application → Service Workers)
+- No 404 or "Request failed" errors in the console
+- App works offline

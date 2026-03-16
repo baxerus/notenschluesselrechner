@@ -116,6 +116,7 @@
       href="assets/splash/splash-ipad-pro-11-gen6.png"
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
@@ -9429,7 +9430,7 @@
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
-          .register("/service-worker.js")
+          .register("./service-worker.js")
           .catch(function (err) {
             // Service worker registration failed — app still works online
             console.warn("Service Worker registration failed:", err);
