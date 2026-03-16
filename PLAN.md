@@ -1004,3 +1004,30 @@ The result header only shows "Maximalpunktanzahl: XYZ" without indicating which 
 - Looking up from the `<select>` element ensures the displayed text always matches the UI option labels — single source of truth.
 - The HTML element `.result-max` is styled with transparent background in print (see line 632 in `style.css`), so the text is legible in both contexts.
 - Adding specific margin in the `@media print` block keeps the delicate print styling intact without affecting the normal view.
+
+---
+
+### Step 32 — Display grades (Note) as circled numbers `[x]`
+
+#### Problem
+
+The grades (1–6) in both the reference table and the recalculated result table (including print view) are displayed as plain numbers. The user wants them displayed as circled numbers (①, ②, ③, ④, ⑤, ⑥).
+
+#### Changes
+
+1. **`src/js/app.js`**
+   - Add a new `formatGrade(n)` helper function that converts numbers 1–6 to circled Unicode characters:
+     ```js
+     function formatGrade(n) {
+       const circled = ["①", "②", "③", "④", "⑤", "⑥"];
+       return circled[n - 1] ?? String(n);
+     }
+     ```
+   - In `renderEditor()` (line ~105): change `${row.grade}` to `${formatGrade(row.grade)}`
+   - In `renderResult()` (line ~201): change `${row.grade}` to `${formatGrade(row.grade)}`
+
+#### Verification
+
+- The reference table (editor) shows circled numbers for grades
+- The result table shows circled numbers for grades
+- Print view (via @media print) shows circled numbers for grades

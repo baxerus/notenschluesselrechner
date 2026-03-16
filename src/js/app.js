@@ -102,7 +102,7 @@ function renderEditor(key) {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td class="col-grade">${row.grade}</td>
+      <td class="col-grade">${formatGrade(row.grade)}</td>
       <td class="col-von"><input type="number" inputmode="decimal" name="von-${row.grade}" value="${row.von}" min="0" step="${currentPointStep}" required aria-label="Von Punkte Note ${row.grade}"></td>
       <td class="col-bis"><span class="cell-readonly">${row.bis}</span></td>
     `;
@@ -191,6 +191,11 @@ function formatNum(n) {
   return String(n).replace(".", ",");
 }
 
+function formatGrade(n) {
+  const circled = ["①", "②", "③", "④", "⑤", "⑥"];
+  return circled[n - 1] ?? String(n);
+}
+
 function renderResult(key, newMax) {
   const sorted = [...key].sort((a, b) => a.grade - b.grade);
   resultBody.innerHTML = "";
@@ -198,7 +203,7 @@ function renderResult(key, newMax) {
   sorted.forEach((row) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${row.grade}</td>
+      <td>${formatGrade(row.grade)}</td>
       <td>${formatNum(row.von)}</td>
       <td>${formatNum(row.bis)}</td>
     `;

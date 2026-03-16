@@ -270,6 +270,13 @@ ol {
   width: 33.33%;
 }
 
+.editor-table td:first-child,
+.result-table td:first-child {
+  font-weight: 200;
+  font-size: 2rem;
+  line-height: 1.6rem;
+}
+
 /* Inputs inside the editor table */
 .editor-table input[type="number"] {
   width: 100%;
