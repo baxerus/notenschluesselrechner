@@ -103,13 +103,20 @@ ol {
 
 /* ==========================================================================
    3. Layout
-   ========================================================================== */
+    ========================================================================== */
+
+:root {
+  --header-padding-top: max(var(--space-md), env(safe-area-inset-top));
+}
 
 .container {
   width: 100%;
   max-width: 480px;
   margin-inline: auto;
   padding: var(--space-md);
+  padding-top: calc(
+    var(--header-padding-top) + var(--space-md) + var(--space-sm) + 1.5rem
+  );
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
@@ -130,9 +137,17 @@ ol {
    ========================================================================== */
 
 .app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
   background-color: var(--color-primary);
   color: var(--color-surface);
-  padding: var(--space-md) var(--space-lg);
+  padding-top: var(--header-padding-top);
+  padding-bottom: var(--space-sm);
+  padding-left: var(--space-lg);
+  padding-right: var(--space-lg);
   text-align: center;
 }
 

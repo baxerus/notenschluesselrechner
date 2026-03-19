@@ -1089,12 +1089,12 @@ The installation hint (i icon button) is shown on all devices, but the instructi
      navigator.standalone === true;
    ```
 
-3. **Hide the info button on non-iOS** — The ⓘ button should only be visible on iOS devices. In `app.js`:
+3. **Hide the info button on non-iOS or when installed** — The ⓘ button should only be visible on iOS devices running in the browser (not standalone). In `app.js`:
 
    ```javascript
-   if (!isIOS) {
+   if (!isIOS || isStandalone) {
      btnInfo.style.display = "none";
-   } else if (!isStandalone && !hasSeenInstallGuide()) {
+   } else if (!hasSeenInstallGuide()) {
      showInstallOverlay();
    }
    ```
@@ -1109,13 +1109,79 @@ The installation hint (i icon button) is shown on all devices, but the instructi
 
 #### Behavior Summary
 
-| Device                    | btn-info Visible? | Hint Auto-Shown?                    |
-| ------------------------- | ----------------- | ----------------------------------- |
-| iPhone/iPad (any browser) | ✅ Yes            | ✅ Yes (if not seen, not installed) |
-| Android                   | ❌ No             | ❌ No                               |
-| Desktop                   | ❌ No             | ❌ No                               |
+| Device                  | btn-info Visible? | Hint Auto-Shown?     |
+| ----------------------- | ----------------- | -------------------- |
+| iPhone/iPad (Browser)   | ✅ Yes            | ✅ Yes (if not seen) |
+| iPhone/iPad (Installed) | ❌ No             | ❌ No                |
+| Android                 | ❌ No             | ❌ No                |
+| Desktop                 | ❌ No             | ❌ No                |
 
 #### Files to Change
 
 1. **`src/js/app.js`** — Update iOS/standalone detection and add non-iOS hide logic
 2. **`index.html`** — Update installation guide text to mention Safari
+
+---
+
+### Step 35 — Fixed blue header with safe area support `[x]`
+
+#### Problem
+
+When the app is installed on iOS, the native status bar (showing time, battery, etc.) is white/black, while the app header is blue. This creates a visual discontinuity at the top of the screen.
+
+#### Solution
+
+Extend the blue header behind the iOS status bar and make it fixed so it stays at the top while scrolling. Use `position: fixed` instead of `position: sticky` because sticky doesn't work reliably in iOS standalone (PWA) mode.
+
+#### Changes
+
+##### `src/css/style.css`
+
+Add CSS variable for header padding top:
+
+```css
+:root {
+  --header-padding-top: max(var(--space-md), env(safe-area-inset-top));
+}
+```
+
+Update `.container` to account for fixed header:
+
+```css
+.container {
+  /* ... existing properties ... */
+  padding-top: calc(
+    var(--header-padding-top) + var(--space-md) + var(--space-sm) + 1.5rem
+  );
+}
+```
+
+Update `.app-header` to be fixed:
+
+```css
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  padding-top: var(--header-padding-top);
+  padding-bottom: var(--space-sm);
+  padding-left: var(--space-lg);
+  padding-right: var(--space-lg);
+  text-align: center;
+}
+```
+
+- `position: fixed` + `top: 0` + `left: 0` + `right: 0` keeps header at top regardless of scroll position
+- `--header-padding-top` variable ensures consistent safe area handling in both header and container
+- Container `padding-top` pushes content below the fixed header
+
+#### Verification
+
+1. Open app in browser
+2. Scroll down — header stays fixed at top
+3. Check that the blue header extends seamlessly into the status bar area on iOS (if testing on device)
+4. Check print output — header is hidden in print (existing `@media print` rule)

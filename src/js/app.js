@@ -452,10 +452,10 @@ function init() {
     window.matchMedia("(display-mode: standalone)").matches ||
     navigator.standalone === true;
 
-  // Hide the info button entirely on non-iOS devices
-  if (!isIOS) {
+  // Hide the info button entirely on non-iOS devices or if already installed
+  if (!isIOS || isStandalone) {
     btnInfo.style.display = "none";
-  } else if (!isStandalone && !hasSeenInstallGuide()) {
+  } else if (!hasSeenInstallGuide()) {
     showInstallOverlay();
   }
 

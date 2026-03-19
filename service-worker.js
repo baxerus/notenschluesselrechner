@@ -8,10 +8,11 @@
  *
  * Strategy: cache-first with network fallback.
  * All app shell files are pre-cached on install.
- * Cache is versioned — bumping CACHE_NAME triggers re-caching on next visit.
+ * Cache is versioned — bump CACHE_NAME to force re-caching on next visit.
+ * Use the current step number as the version (e.g., "step35").
  */
 
-const CACHE_NAME = "notenschluessel-v9";
+const CACHE_NAME = "notenschluessel-step35b";
 
 const APP_SHELL = [
   "./",
