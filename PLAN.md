@@ -1059,3 +1059,63 @@ The grades (1–6) in both the reference table and the recalculated result table
 - Service worker registers successfully (check DevTools → Application → Service Workers)
 - No 404 or "Request failed" errors in the console
 - App works offline
+
+---
+
+### Step 34 — Smart iOS installation hint `[x]`
+
+#### Problem
+
+The installation hint (i icon button) is shown on all devices, but the instructions only work for iOS Safari. On desktop and Android, the hint is confusing and unhelpful.
+
+#### Decision
+
+1. **Improve iOS detection** — The existing regex `/iphone|ipad|ipod/i` doesn't detect iPadOS 13+ where the userAgent reports "MacIntel". Use a multi-method approach:
+
+   ```javascript
+   const isIOS = (() => {
+     const hasIOSInUA = /iPhone|iPad|iPod/.test(navigator.userAgent);
+     const isMacIntelWithTouch =
+       navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+     return hasIOSInUA || isMacIntelWithTouch;
+   })();
+   ```
+
+2. **Improve standalone detection** — Use the modern `display-mode` media query as primary check:
+
+   ```javascript
+   const isStandalone =
+     window.matchMedia("(display-mode: standalone)").matches ||
+     navigator.standalone === true;
+   ```
+
+3. **Hide the info button on non-iOS** — The ⓘ button should only be visible on iOS devices. In `app.js`:
+
+   ```javascript
+   if (!isIOS) {
+     btnInfo.style.display = "none";
+   } else if (!isStandalone && !hasSeenInstallGuide()) {
+     showInstallOverlay();
+   }
+   ```
+
+4. **Update German text** — Change the heading to mention Safari explicitly:
+   ```html
+   <p>
+     So fügst du den Notenschlüsselrechner im Safari Browser zum Home-Bildschirm
+     hinzu:
+   </p>
+   ```
+
+#### Behavior Summary
+
+| Device                    | btn-info Visible? | Hint Auto-Shown?                    |
+| ------------------------- | ----------------- | ----------------------------------- |
+| iPhone/iPad (any browser) | ✅ Yes            | ✅ Yes (if not seen, not installed) |
+| Android                   | ❌ No             | ❌ No                               |
+| Desktop                   | ❌ No             | ❌ No                               |
+
+#### Files to Change
+
+1. **`src/js/app.js`** — Update iOS/standalone detection and add non-iOS hide logic
+2. **`index.html`** — Update installation guide text to mention Safari

@@ -50,6 +50,7 @@ let resultSection;
 let resultBody;
 let errorBox;
 let installOverlay;
+let btnInfo;
 
 // ---------------------------------------------------------------------------
 // State
@@ -364,6 +365,7 @@ function init() {
   resultBody = document.getElementById("result-body");
   errorBox = document.getElementById("error-box");
   installOverlay = document.getElementById("install-overlay");
+  btnInfo = document.getElementById("btn-info");
 
   // Restore point steps
   currentPointStep = loadPointStep();
@@ -439,10 +441,21 @@ function init() {
   });
 
   // iOS install guide
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isStandalone = window.navigator.standalone === true;
+  const isIOS = (() => {
+    const hasIOSInUA = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const isMacIntelWithTouch =
+      navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    return hasIOSInUA || isMacIntelWithTouch;
+  })();
 
-  if (isIOS && !isStandalone && !hasSeenInstallGuide()) {
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    navigator.standalone === true;
+
+  // Hide the info button entirely on non-iOS devices
+  if (!isIOS) {
+    btnInfo.style.display = "none";
+  } else if (!isStandalone && !hasSeenInstallGuide()) {
     showInstallOverlay();
   }
 
